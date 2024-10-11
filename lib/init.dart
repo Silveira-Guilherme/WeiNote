@@ -11,6 +11,7 @@ class InitPage extends StatefulWidget {
 
 class _InitPageState extends State<InitPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
+
   final TextEditingController _NameController = TextEditingController();
 
   Query(String query) async {

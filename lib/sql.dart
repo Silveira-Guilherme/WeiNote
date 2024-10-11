@@ -33,7 +33,7 @@ class DatabaseHelper {
     // Create User table
     await db.execute('''
     CREATE TABLE User(
-      id INTEGER PRIMARY KEY,
+      iduser INTEGER PRIMARY KEY,
       name TEXT,
       init INTEGER
     )
@@ -42,7 +42,7 @@ class DatabaseHelper {
     // Create Dias table
     await db.execute('''
     CREATE TABLE Dias(
-      id INTEGER PRIMARY KEY,
+      iddia INTEGER PRIMARY KEY,
       name TEXT,
       iduser INTEGER,
       obj TEXT,
@@ -53,7 +53,7 @@ class DatabaseHelper {
     // Create Exer table
     await db.execute('''
     CREATE TABLE Exer(
-      id INTEGER PRIMARY KEY,
+      idexer INTEGER PRIMARY KEY,
       name TEXT,
       coddia INTEGER,
       FOREIGN KEY (coddia) REFERENCES Dias(id)
@@ -63,7 +63,7 @@ class DatabaseHelper {
     // Create Peso table
     await db.execute('''
     CREATE TABLE Peso(
-      id INTEGER PRIMARY KEY,
+      idpeso INTEGER PRIMARY KEY,
       name TEXT,
       reps INTEGER,
       qtd INTEGER,

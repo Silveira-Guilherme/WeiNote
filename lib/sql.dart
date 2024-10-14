@@ -30,47 +30,29 @@ class DatabaseHelper {
   }
 
   Future<void> _createDatabase(Database db, int version) async {
-    // Create User table
-    await db.execute('''
-    CREATE TABLE User(
-      iduser INTEGER PRIMARY KEY,
-      name TEXT,
-      init INTEGER
-    )
-  ''');
+    await db.execute("DROP TABLE IF EXISTS User;");
+    await db.execute("DROP TABLE IF EXISTS Exer;");
+    await db.execute("DROP TABLE IF EXISTS Serie;");
+    await db.execute("DROP TABLE IF EXISTS Tr;");
+    await db.execute("DROP TABLE IF EXISTS Tr_Exer;");
+    await db.execute("DROP TABLE IF EXISTS  Tr_Day;");
 
-    // Create Dias table
-    await db.execute('''
-    CREATE TABLE Dias(
-      iddia INTEGER PRIMARY KEY,
-      name TEXT,
-      iduser INTEGER,
-      obj TEXT,
-      FOREIGN KEY (iduser) REFERENCES User(id)
-    )
-  ''');
+    await db.execute(
+        "CREATE TABLE User(IdUser INTEGER PRIMARY KEY, Name TEXT, init INTEGER)");
 
-    // Create Exer table
-    await db.execute('''
-    CREATE TABLE Exer(
-      idexer INTEGER PRIMARY KEY,
-      name TEXT,
-      coddia INTEGER,
-      FOREIGN KEY (coddia) REFERENCES Dias(id)
-    )
-  ''');
+    await db
+        .execute("CREATE TABLE Exer(IdExer INTEGER PRIMARY KEY,Name TEXT,)");
 
-    // Create Peso table
-    await db.execute('''
-    CREATE TABLE Peso(
-      idpeso INTEGER PRIMARY KEY,
-      name TEXT,
-      reps INTEGER,
-      qtd INTEGER,
-      codexer INTEGER,
-      FOREIGN KEY (codexer) REFERENCES Exer(id)
-    )
-  ''');
+    await db.execute(
+        "CREATE TABLE Serie(IdSerie INTEGER PRIMARY KEY, Peso int,Rep int,CodExer INTEGER,FOREIGN KEY (CodExer) REFERENCES Exer(IdExer))");
+
+    await db.execute("CREATE TABLE Tr(IdTr INTEGER PRIMARY KEY,Name TEXT)");
+
+    await db.execute(
+        "CREATE TABLE Tr_Exer(IdTr_Exer INTEGER PRIMARY KEY,CodExer INTEGER,FOREIGN KEY (CodExer) REFERENCES Exer(IdExer),CodTr INTEGER,FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
+
+    await db.execute(
+        "CREATE TABLE Tr_Day(IdTr_Day INTEGER PRIMARY KEY,Day TEXT,CodTr INTEGER,FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
   }
 
   Future<int> insertName(String name) async {

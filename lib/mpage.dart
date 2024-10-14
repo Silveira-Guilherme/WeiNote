@@ -1,3 +1,5 @@
+import 'dart:async'; // For Timer
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'sql.dart';
@@ -17,6 +19,11 @@ class _MPageState extends State<MPage> {
   List<bool> completed = [];
   List<bool> expandedList = [];
   DateTime now = DateTime.now();
+
+  // Variables for chronometer with centiseconds (SS)
+  Timer? _timer;
+  int _elapsedMilliseconds = 0;
+  bool _isRunning = false;
 
   void changeValue(bool value, int index) {
     setState(() {
@@ -68,6 +75,46 @@ class _MPageState extends State<MPage> {
     expandedList.add(false);
   }
 
+  // Chronometer logic with centiseconds (SS)
+  void _startTimer() {
+    if (!_isRunning) {
+      _timer = Timer.periodic(const Duration(milliseconds: 10), (Timer timer) {
+        setState(() {
+          _elapsedMilliseconds += 10; // Increment by 10 milliseconds
+        });
+      });
+      setState(() {
+        _isRunning = true;
+      });
+    }
+  }
+
+  void _stopTimer() {
+    if (_timer != null) {
+      _timer!.cancel();
+      setState(() {
+        _isRunning = false;
+      });
+    }
+  }
+
+  void _resetTimer() {
+    _stopTimer();
+    setState(() {
+      _elapsedMilliseconds = 0;
+    });
+  }
+
+  // Time formatter in mm:ss:SS format
+  String get _formattedTime {
+    final minutes = (_elapsedMilliseconds ~/ 60000).toString().padLeft(2, '0');
+    final seconds =
+        ((_elapsedMilliseconds % 60000) ~/ 1000).toString().padLeft(2, '0');
+    final centiseconds =
+        ((_elapsedMilliseconds % 1000) ~/ 10).toString().padLeft(2, '0');
+    return "$minutes:$seconds:$centiseconds";
+  }
+
   @override
   Widget build(BuildContext context) {
     TextEditingController _textFieldController = TextEditingController();
@@ -94,7 +141,7 @@ class _MPageState extends State<MPage> {
             height: 200,
             width: MediaQuery.of(context).size.width - 10,
             child: Card(
-              color: const Color.fromARGB(255, 233, 233, 233),
+              color: Color.fromARGB(255, 48, 48, 48),
               elevation: 1,
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -134,6 +181,8 @@ class _MPageState extends State<MPage> {
                     SizedBox(
                       width: MediaQuery.of(context).size.width / 25,
                     ),
+
+                    // Chronometer Card
                     SizedBox(
                       width: MediaQuery.of(context).size.width / 2 - 10,
                       child: Column(
@@ -144,12 +193,12 @@ class _MPageState extends State<MPage> {
                             child: SizedBox(
                               width: MediaQuery.of(context).size.width,
                               height: MediaQuery.of(context).size.height / 14,
-                              child: const Column(
+                              child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Objetivo',
-                                    style: TextStyle(
+                                    _formattedTime,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 24.0,
                                     ),
@@ -158,20 +207,25 @@ class _MPageState extends State<MPage> {
                               ),
                             ),
                           ),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width,
-                            height: MediaQuery.of(context).size.height / 14,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  obj,
-                                  style: const TextStyle(
-                                    fontSize: 20.0,
-                                  ),
-                                )
-                              ],
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.play_arrow),
+                                onPressed: _startTimer,
+                                color: Colors.white,
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.pause),
+                                onPressed: _stopTimer,
+                                color: Colors.red,
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.stop),
+                                onPressed: _resetTimer,
+                                color: Colors.red,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -261,36 +315,3 @@ class _MPageState extends State<MPage> {
     );
   }
 }
-
-
-/*
-floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            SizedBox(
-              width: 250,
-              child: TextField(
-                controller: _textFieldController,
-                decoration: const InputDecoration(
-                  hintText: 'Enter Name',
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            FloatingActionButton(
-              onPressed: () async {
-                String name = _textFieldController.text;
-                print(name + "7777777777777777");
-                if (name.isNotEmpty) {
-                  //await query(name);
-                }
-              },
-              child: const Icon(Icons.add),
-            ),
-          ],
-        ),
-      ),
-
-      */

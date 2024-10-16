@@ -1,5 +1,6 @@
+// ignore_for_file: non_constant_identifier_names, unused_local_variable
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gymdo/mpage.dart';
 
 import 'sql.dart';
@@ -20,13 +21,12 @@ class _InitPageState extends State<InitPage> {
     print(query);
   }
 
-  // ignore: non_constant_identifier_names
   VerifyLog() async {
     DatabaseHelper dbHelper = DatabaseHelper();
     List<Map<String, dynamic>> queryResult =
-        await dbHelper.customQuery('select init from user');
+        await dbHelper.customQuery('select Init from user');
     print(queryResult);
-    if (queryResult[0]['init'] == 1) {
+    if (queryResult[0]['Init'] == 1) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -94,7 +94,7 @@ class _InitPageState extends State<InitPage> {
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
-                      Query("insert into user values (0, '" +
+                      Query("insert into User values (0, '" +
                           _NameController.text +
                           "', 1);");
                       VerifyLog();

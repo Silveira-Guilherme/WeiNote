@@ -30,41 +30,42 @@ class DatabaseHelper {
   }
 
   Future<void> _createDatabase(Database db, int version) async {
-    await db.execute("DROP TABLE IF EXISTS User;");
-    await db.execute("DROP TABLE IF EXISTS Exer;");
-    await db.execute("DROP TABLE IF EXISTS Serie;");
-    await db.execute("DROP TABLE IF EXISTS Tr;");
-    await db.execute("DROP TABLE IF EXISTS Tr_Exer;");
-    await db.execute("DROP TABLE IF EXISTS  Tr_Day;");
-
+    // Create User table
     await db.execute(
-        "CREATE TABLE User(IdUser INTEGER PRIMARY KEY, Name TEXT, init INTEGER)");
+        "CREATE TABLE IF NOT EXISTS User(IdUser INTEGER PRIMARY KEY, Name TEXT, Init INTEGER)");
 
-    await db
-        .execute("CREATE TABLE Exer(IdExer INTEGER PRIMARY KEY,Name TEXT,)");
-
+    // Create Exer table
     await db.execute(
-        "CREATE TABLE Serie(IdSerie INTEGER PRIMARY KEY, Peso int,Rep int,CodExer INTEGER,FOREIGN KEY (CodExer) REFERENCES Exer(IdExer))");
+        "CREATE TABLE IF NOT EXISTS Exer(IdExer INTEGER PRIMARY KEY, Name TEXT)");
 
-    await db.execute("CREATE TABLE Tr(IdTr INTEGER PRIMARY KEY,Name TEXT)");
-
+    // Create Serie table
     await db.execute(
-        "CREATE TABLE Tr_Exer(IdTr_Exer INTEGER PRIMARY KEY,CodExer INTEGER,FOREIGN KEY (CodExer) REFERENCES Exer(IdExer),CodTr INTEGER,FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
+        "CREATE TABLE IF NOT EXISTS Serie(IdSerie INTEGER PRIMARY KEY, Peso INTEGER, Rep INTEGER, CodExer INTEGER, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer))");
 
+    // Create Tr table
     await db.execute(
-        "CREATE TABLE Tr_Day(IdTr_Day INTEGER PRIMARY KEY,Day TEXT,CodTr INTEGER,FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
+        "CREATE TABLE IF NOT EXISTS Tr(IdTr INTEGER PRIMARY KEY, Name TEXT)");
+
+    // Create Tr_Exer table (Fixed SQL syntax by adding closing parenthesis)
+    await db.execute(
+        "CREATE TABLE IF NOT EXISTS Tr_Exer(IdTr_Exer INTEGER PRIMARY KEY, CodExer INTEGER, CodTr INTEGER, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
+
+    // Create Tr_Day table
+    await db.execute(
+        "CREATE TABLE IF NOT EXISTS Tr_Day(IdTr_Day INTEGER PRIMARY KEY, Day TEXT, CodTr INTEGER, FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
   }
 
   Future<int> insertName(String name) async {
     Database db = await database;
-    return await db.insert('Names', {'name': name});
+    return await db.insert('User', {'Name': name}); // Insert into User table
   }
 
   Future<List<String>> getNames() async {
     Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query('Names');
+    List<Map<String, dynamic>> maps =
+        await db.query('User'); // Query from User table
     return List.generate(maps.length, (i) {
-      return maps[i]['name'];
+      return maps[i]['Name'];
     });
   }
 

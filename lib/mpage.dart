@@ -78,7 +78,7 @@ class _MPageState extends State<MPage> {
 
     // Clear previous data
     trainingExercisesMap.clear();
-
+    print(trainingData);
     // Grouping exercises by training name
     for (var row in trainingData) {
       String trainingName =
@@ -96,11 +96,11 @@ class _MPageState extends State<MPage> {
       bool exerciseExists = exercisesList
           .any((exercise) => exercise['ExerciseName'] == exerciseName);
 
-      if (!exerciseExists) {
+      if (!exerciseExists && row['ExerciseName'] != null) {
         exercisesList.add({
           'ExerciseName': exerciseName,
-          'Series': [], // Corrected from 'Serie' to 'Series' for consistency
-          'isExpanded': false, // Initialize isExpanded state for each exercise
+          'Series': [],
+          'isExpanded': false,
         });
       }
 
@@ -189,300 +189,332 @@ class _MPageState extends State<MPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Olá $names',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24.0,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-        titleSpacing: 10.0,
-      ),
-      body: Column(children: [
-        const SizedBox(height: 10),
-        // Training Name is now below the date and chronometer card
-        SizedBox(
-          height: 200,
-          width: MediaQuery.of(context).size.width - 10,
-          child: Card(
-            color: const Color.fromARGB(255, 48, 48, 48),
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width / 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Card(
-                          color: Colors.white,
-                          elevation: 3,
-                          child: SizedBox(
-                            width: MediaQuery.of(context).size.width,
-                            height: MediaQuery.of(context).size.height / 7,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  dateStr,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 50.0,
-                                  ),
-                                ),
-                                Text(dayStr),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // Chronometer Card
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width / 2 - 10,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Card(
-                          elevation: 3,
-                          child: SizedBox(
-                            width: MediaQuery.of(context).size.width,
-                            height: MediaQuery.of(context).size.height / 14,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _formattedTime,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 24.0,
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.play_arrow),
-                              onPressed: _startTimer,
-                              color: Colors.white,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.stop),
-                              onPressed: _stopTimer,
-                              color: Colors.white,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.replay),
-                              onPressed: _resetTimer,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    return PopScope(
+        canPop: false,
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            automaticallyImplyLeading: false,
+            title: Text(
+              'Olá $names',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24.0,
+                color: Colors.white,
               ),
             ),
+            centerTitle: true,
+            titleSpacing: 10.0,
           ),
-        ),
-        const SizedBox(height: 10),
-
-        // Training exercises display
-        // Inside the build method, within the ListView.builder for exercises
-        Expanded(
-          child: ListView.builder(
-            itemCount: trainingExercisesMap.length,
-            itemBuilder: (context, index) {
-              String trainingName = trainingExercisesMap.keys.elementAt(index);
-              List<Map<String, dynamic>> exercises =
-                  trainingExercisesMap[trainingName]!;
-
-              return Card(
-                margin: const EdgeInsets.all(10),
-                color: Colors.black,
-                elevation: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        title: Text(
-                          trainingName,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 20),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(
-                            trainingExpanded[index]
-                                ? Icons.expand_less
-                                : Icons.expand_more,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              trainingExpanded[index] = !trainingExpanded[
-                                  index]; // Toggle expansion of training
-                            });
-                          },
-                        ),
-                      ),
-                      if (trainingExpanded[index]) ...[
-                        if (exercises.isEmpty) ...[
-                          // Display "Quim" when there are no exercises
-                          Text(
-                            'Quim',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ] else ...[
-                          // Loop through exercises if they exist
-                          for (var exerciseIndex = 0;
-                              exerciseIndex < exercises.length;
-                              exerciseIndex++)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Row for exercise title, completed selection, and expand button
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // Exercise Title
-                                    Expanded(
-                                      child: Text(
-                                        exercises[exerciseIndex]
-                                                ['ExerciseName'] ??
-                                            'Unnamed Exercise',
+          body: RefreshIndicator(
+            color: Colors.black,
+            onRefresh: () async {
+              await initInfo();
+            },
+            child: Column(children: [
+              const SizedBox(height: 10),
+              // Training Name is now below the date and chronometer card
+              SizedBox(
+                height: 200,
+                width: MediaQuery.of(context).size.width - 10,
+                child: Card(
+                  color: const Color.fromARGB(255, 48, 48, 48),
+                  elevation: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width / 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Card(
+                                color: Colors.white,
+                                elevation: 3,
+                                child: SizedBox(
+                                  width: MediaQuery.of(context).size.width,
+                                  height:
+                                      MediaQuery.of(context).size.height / 7,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        dateStr,
                                         style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 50.0,
                                         ),
                                       ),
-                                    ),
-                                    // Completed Selection Button
-                                    Checkbox(
-                                      value: completed[exerciseIndex],
-                                      onChanged: (value) {
-                                        changeValue(value!,
-                                            exerciseIndex); // Update completed state
-                                      },
-                                      activeColor: Colors.green,
-                                    ),
-                                    // Expand/Collapse Button for exercise details
-                                    IconButton(
-                                      icon: Icon(
-                                        exerciseExpanded[index][exerciseIndex]
-                                            ? Icons.expand_less
-                                            : Icons.expand_more,
-                                        color: Colors.white,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          exerciseExpanded[index][
-                                              exerciseIndex] = !exerciseExpanded[
-                                                  index][
-                                              exerciseIndex]; // Toggle expansion of exercise
-                                        });
-                                      },
-                                    ),
-                                  ],
+                                      Text(dayStr),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                // Display Series only when exercise is expanded
-                                if (exerciseExpanded[index][exerciseIndex]) ...[
-                                  for (var series in exercises[exerciseIndex]
-                                      ['Series'])
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Peso: ${series['Peso']}, Reps: ${series['Rep']}',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Chronometer Card
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width / 2 - 10,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Card(
+                                color: Colors.white,
+                                elevation: 3,
+                                child: SizedBox(
+                                  width: MediaQuery.of(context).size.width,
+                                  height:
+                                      MediaQuery.of(context).size.height / 14,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _formattedTime,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 24.0,
                                         ),
-                                        const SizedBox(height: 4),
-                                      ],
-                                    ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.play_arrow),
+                                    onPressed: _startTimer,
+                                    color: Colors.white,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.pause),
+                                    onPressed: _stopTimer,
+                                    color: Colors.red,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.stop),
+                                    onPressed: _resetTimer,
+                                    color: Colors.red,
+                                  ),
                                 ],
-                                const SizedBox(height: 10),
-                              ],
-                            ),
-                        ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 10),
+
+              // Training exercises display
+              // Inside the build method, within the ListView.builder for exercises
+              Expanded(
+                child: ListView.builder(
+                  itemCount: trainingExercisesMap.length,
+                  itemBuilder: (context, index) {
+                    String trainingName =
+                        trainingExercisesMap.keys.elementAt(index);
+                    List<Map<String, dynamic>> exercises =
+                        trainingExercisesMap[trainingName]!;
+
+                    return Card(
+                      margin: const EdgeInsets.all(10),
+                      color: const Color.fromARGB(255, 48, 48, 48),
+                      elevation: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: Text(
+                                //"Nome Treino " +
+                                trainingName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 20),
+                              ),
+                              trailing: IconButton(
+                                icon: Icon(
+                                  trainingExpanded[index]
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    trainingExpanded[index] = !trainingExpanded[
+                                        index]; // Toggle expansion of training
+                                  });
+                                },
+                              ),
+                            ),
+                            if (trainingExpanded[index]) ...[
+                              if (exercises.isEmpty) ...[
+                                // Display "Quim" when there are no exercises
+                                const Text(
+                                  'Sem Exercicios Registados',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    //fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ] else ...[
+                                // Loop through exercises if they exist
+                                for (var exerciseIndex = 0;
+                                    exerciseIndex < exercises.length;
+                                    exerciseIndex++)
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Row for exercise title, completed selection, and expand button
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          // Exercise Title
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: 50),
+                                              child: Text(
+                                                // "Nomes Exercicios " +
+                                                exercises[exerciseIndex]
+                                                    ['ExerciseName'],
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 18,
+                                                  //fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          // Completed Selection Button
+                                          Checkbox(
+                                            value: completed[exerciseIndex],
+                                            onChanged: (value) {
+                                              changeValue(value!,
+                                                  exerciseIndex); // Update completed state
+                                            },
+                                            activeColor: Colors.red,
+                                          ),
+                                          // Expand/Collapse Button for exercise details
+                                          IconButton(
+                                            icon: Icon(
+                                              exerciseExpanded[index]
+                                                      [exerciseIndex]
+                                                  ? Icons.expand_less
+                                                  : Icons.expand_more,
+                                              color: Colors.white,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                exerciseExpanded[index]
+                                                        [exerciseIndex] =
+                                                    !exerciseExpanded[index][
+                                                        exerciseIndex]; // Toggle expansion of exercise
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      // Display Series only when exercise is expanded
+                                      if (exerciseExpanded[index]
+                                          [exerciseIndex]) ...[
+                                        for (var series
+                                            in exercises[exerciseIndex]
+                                                ['Series'])
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 50),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Peso: ${series['Peso']}kg           Reps: ${series['Rep']}',
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16),
+                                                ),
+                                                const SizedBox(height: 4),
+                                              ],
+                                            ),
+                                          )
+                                      ],
+                                      const SizedBox(height: 10),
+                                    ],
+                                  ),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ]),
           ),
-        ),
-      ]),
-      floatingActionButton: SpeedDial(
-        animatedIcon: AnimatedIcons.menu_close,
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        overlayOpacity: 0.5,
-        spacing: 12,
-        children: [
-          SpeedDialChild(
-            child: const Icon(Icons.add),
-            label: 'Add Training',
-            backgroundColor: Colors.red,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CPage()),
-              );
-            },
+          floatingActionButton: SpeedDial(
+            animatedIcon: AnimatedIcons.menu_close,
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            overlayOpacity: 0.5,
+            spacing: 12,
+            children: [
+              SpeedDialChild(
+                child: const Icon(
+                  Icons.add,
+                ),
+                label: 'Add Training',
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CPage()),
+                  );
+                },
+              ),
+              SpeedDialChild(
+                child: const Icon(Icons.edit),
+                label: 'Edit',
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.black,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CPage()),
+                  );
+                },
+              ),
+              SpeedDialChild(
+                child: const Icon(Icons.visibility),
+                label: 'See All Trainings',
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.black,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => TrainingListPage()),
+                  );
+                },
+              ),
+            ],
           ),
-          SpeedDialChild(
-            child: const Icon(Icons.edit),
-            label: 'Edit',
-            backgroundColor: Colors.grey,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CPage()),
-              );
-            },
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.visibility),
-            label: 'See All Trainings',
-            backgroundColor: Colors.grey,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TrainingListPage()),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+        ));
   }
 }

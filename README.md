@@ -23,14 +23,14 @@
    ```bash
    git clone https://github.com/your-username/WeiNote.git
    cd WeiNote
-Install Dependencies
+2. **Install Dependencies**
 
 Use Flutter’s package manager to install the necessary dependencies:
 
-bash
-Copiar código
+
+
 flutter pub get
-🛠 Configure Database
+3. **🛠 Configure Database**
 WeiNote uses SQLite for local data storage. There's no extra setup needed, as SQLite is integrated into the project via the sqflite package.
 
 Simply ensure that the database configuration is set up correctly in your code, and it will automatically manage your workout data.

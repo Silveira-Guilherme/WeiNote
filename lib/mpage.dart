@@ -14,25 +14,16 @@ class MPage extends StatefulWidget {
 class _MPageState extends State<MPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   String names = 'User'; // Default name if none is fetched
-  String currentTrainingName = 'No Training Selected'; // For training name
   String dateStr = '', dayStr = '';
-  List<bool> completed = [];
-  List<bool> trainingExpanded = []; // Track expanded state for training details
-  List<List<bool>> exerciseExpanded =
-      []; // Track expanded state for each exercise in each training
-  DateTime now = DateTime.now();
-  Map<String, List<Map<String, dynamic>>> trainingExercisesMap = {};
 
-  // Variables for chronometer with centiseconds (SS)
+  // Replace this with a list of Training objects
+  List<Training> trainings = [];
+  DateTime now = DateTime.now();
+
+  // Chronometer variables
   Timer? _timer;
   int _elapsedMilliseconds = 0;
   bool _isRunning = false;
-
-  void changeValue(bool value, int index) {
-    setState(() {
-      completed[index] = value; // Update completed state
-    });
-  }
 
   Future<List<Map<String, dynamic>>> query(String query) async {
     return await dbHelper.customQuery(query);
@@ -41,25 +32,18 @@ class _MPageState extends State<MPage> {
   Future<void> initInfo() async {
     // Fetch user name
     List<Map<String, dynamic>> username = await query("SELECT Name FROM User");
-    if (username.isNotEmpty) {
-      setState(() {
-        names = username[0]['Name']?.toString() ??
-            'User'; // Fallback to 'User' if null
-      });
-    }
+    names = username.isNotEmpty
+        ? username[0]['Name']?.toString() ?? 'User'
+        : 'User';
 
-    // Extract the weekday from the data string
-    dayStr = DateFormat('EEEE', 'pt_BR')
-        .format(now)
-        .toLowerCase(); // Convert to lowercase to match the database
+    // Extract the weekday
+    dayStr = DateFormat('EEEE', 'pt_BR').format(now).toLowerCase();
 
     // Fetch the current training name and associated exercises
     List<dynamic> trainingData = await query("""
       SELECT 
         t.Name as TrainingName, 
-        e.IdExer, 
         e.Name as ExerciseName, 
-        s.IdSerie, 
         s.Peso, 
         s.Rep 
       FROM 
@@ -77,69 +61,49 @@ class _MPageState extends State<MPage> {
     """);
 
     // Clear previous data
-    trainingExercisesMap.clear();
-    print(trainingData);
-    // Grouping exercises by training name
+    trainings.clear();
+
+    // Group exercises by training name using the Training class
+    Map<String, Training> trainingMap = {};
+
     for (var row in trainingData) {
       String trainingName =
           row['TrainingName']?.toString() ?? 'Unnamed Training';
       String exerciseName = row['ExerciseName'] ?? 'Unnamed Exercise';
 
-      // Add training if not already present
-      if (!trainingExercisesMap.containsKey(trainingName)) {
-        trainingExercisesMap[trainingName] = [];
+      // Initialize training if it doesn't exist
+      if (!trainingMap.containsKey(trainingName)) {
+        trainingMap[trainingName] = Training(name: trainingName, exercises: []);
       }
 
-      // Add exercise info if the exercise is not already added
-      List<Map<String, dynamic>> exercisesList =
-          trainingExercisesMap[trainingName]!;
-      bool exerciseExists = exercisesList
-          .any((exercise) => exercise['ExerciseName'] == exerciseName);
+      // Add exercise information
+      var training = trainingMap[trainingName]!;
+      var exercise = training.exercises.firstWhere(
+        (ex) => ex.name == exerciseName,
+        orElse: () => Exercise(
+            name: exerciseName,
+            completed: false,
+            isExpanded: false,
+            weights: []),
+      );
 
-      if (!exerciseExists && row['ExerciseName'] != null) {
-        exercisesList.add({
-          'ExerciseName': exerciseName,
-          'Series': [],
-          'isExpanded': false,
+      // Add series information if not already present
+      if (!training.exercises.contains(exercise)) {
+        training.exercises.add(exercise);
+      }
+
+      // Add weight and rep information
+      if (row['Peso'] != null && row['Rep'] != null) {
+        exercise.weights.add({
+          'Peso': row['Peso'],
+          'Rep': row['Rep'],
         });
       }
-
-      // Add series information
-      if (row['IdSerie'] != null) {
-        var exerciseIndex = exercisesList
-            .indexWhere((exercise) => exercise['ExerciseName'] == exerciseName);
-        if (exerciseIndex != -1) {
-          exercisesList[exerciseIndex]['Series'].add({
-            'IdSerie': row['IdSerie'],
-            'Peso': row['Peso'] ?? 'N/A',
-            'Rep': row['Rep'] ?? 'N/A',
-          });
-        }
-      }
     }
 
-    // If there are trainings available, update state accordingly
-    if (trainingExercisesMap.isNotEmpty) {
-      setState(() {
-        currentTrainingName =
-            trainingExercisesMap.keys.first; // Get the first training name
-        completed = List.generate(
-            trainingExercisesMap[currentTrainingName]!.length,
-            (_) => false); // Initialize completed state
-        trainingExpanded = List.generate(trainingExercisesMap.length,
-            (_) => false); // Initialize trainingExpanded
-        exerciseExpanded = List.generate(
-            trainingExercisesMap.length,
-            (index) => List.generate(
-                trainingExercisesMap.values.elementAt(index).length,
-                (_) => false)); // Initialize exerciseExpanded
-      });
-    } else {
-      setState(() {
-        currentTrainingName = 'No Training Selected'; // Keep the message
-        completed.clear(); // Clear completed list
-      });
-    }
+    // Convert the map to a list of trainings
+    trainings = trainingMap.values.toList();
+    setState(() {});
   }
 
   @override
@@ -189,8 +153,8 @@ class _MPageState extends State<MPage> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-        canPop: false,
+    return WillPopScope(
+        onWillPop: () async => false,
         child: Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.black,
@@ -213,7 +177,7 @@ class _MPageState extends State<MPage> {
             },
             child: Column(children: [
               const SizedBox(height: 10),
-              // Training Name is now below the date and chronometer card
+              // Date and Chronometer Card
               SizedBox(
                 height: 200,
                 width: MediaQuery.of(context).size.width - 10,
@@ -257,7 +221,6 @@ class _MPageState extends State<MPage> {
                           ),
                         ),
                         const SizedBox(width: 10),
-
                         // Chronometer Card
                         SizedBox(
                           width: MediaQuery.of(context).size.width / 2 - 10,
@@ -316,15 +279,11 @@ class _MPageState extends State<MPage> {
               const SizedBox(height: 10),
 
               // Training exercises display
-              // Inside the build method, within the ListView.builder for exercises
               Expanded(
                 child: ListView.builder(
-                  itemCount: trainingExercisesMap.length,
+                  itemCount: trainings.length,
                   itemBuilder: (context, index) {
-                    String trainingName =
-                        trainingExercisesMap.keys.elementAt(index);
-                    List<Map<String, dynamic>> exercises =
-                        trainingExercisesMap[trainingName]!;
+                    Training training = trainings[index];
 
                     return Card(
                       margin: const EdgeInsets.all(10),
@@ -334,131 +293,91 @@ class _MPageState extends State<MPage> {
                         padding: const EdgeInsets.all(8.0),
                         child: Column(
                           children: [
-                            ListTile(
+                            ExpansionTile(
                               title: Text(
-                                //"Nome Treino " +
-                                trainingName,
+                                training.name,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 20),
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(
-                                  trainingExpanded[index]
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
+                                  fontWeight: FontWeight.bold,
                                   color: Colors.white,
+                                  fontSize: 20,
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    trainingExpanded[index] = !trainingExpanded[
-                                        index]; // Toggle expansion of training
-                                  });
-                                },
                               ),
-                            ),
-                            if (trainingExpanded[index]) ...[
-                              if (exercises.isEmpty) ...[
-                                // Display "Quim" when there are no exercises
-                                const Text(
-                                  'Sem Exercicios Registados',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    //fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ] else ...[
-                                // Loop through exercises if they exist
-                                for (var exerciseIndex = 0;
-                                    exerciseIndex < exercises.length;
-                                    exerciseIndex++)
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Row for exercise title, completed selection, and expand button
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          // Exercise Title
-                                          Expanded(
-                                            child: Padding(
-                                              padding: const EdgeInsets.only(
-                                                  left: 50),
-                                              child: Text(
-                                                // "Nomes Exercicios " +
-                                                exercises[exerciseIndex]
-                                                    ['ExerciseName'],
+                              children: [
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: training.exercises.length,
+                                  itemBuilder: (context, exIndex) {
+                                    Exercise exercise =
+                                        training.exercises[exIndex];
+
+                                    return Column(
+                                      children: [
+                                        ListTile(
+                                          title: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                exercise.name,
                                                 style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 18,
-                                                  //fontWeight: FontWeight.bold,
-                                                ),
+                                                    color: Colors.white),
                                               ),
-                                            ),
+                                              Row(
+                                                children: [
+                                                  Checkbox(
+                                                    value: exercise.completed,
+                                                    onChanged: (bool? value) {
+                                                      setState(() {
+                                                        exercise.completed =
+                                                            value!;
+                                                      });
+                                                    },
+                                                    activeColor: Colors.red,
+                                                  ),
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      exercise.isExpanded
+                                                          ? Icons.expand_less
+                                                          : Icons.expand_more,
+                                                      color: Colors.white,
+                                                    ),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        exercise.isExpanded =
+                                                            !exercise
+                                                                .isExpanded;
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
-                                          // Completed Selection Button
-                                          Checkbox(
-                                            value: completed[exerciseIndex],
-                                            onChanged: (value) {
-                                              changeValue(value!,
-                                                  exerciseIndex); // Update completed state
-                                            },
-                                            activeColor: Colors.red,
-                                          ),
-                                          // Expand/Collapse Button for exercise details
-                                          IconButton(
-                                            icon: Icon(
-                                              exerciseExpanded[index]
-                                                      [exerciseIndex]
-                                                  ? Icons.expand_less
-                                                  : Icons.expand_more,
-                                              color: Colors.white,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                exerciseExpanded[index]
-                                                        [exerciseIndex] =
-                                                    !exerciseExpanded[index][
-                                                        exerciseIndex]; // Toggle expansion of exercise
-                                              });
-                                            },
+                                        ),
+                                        if (exercise.isExpanded) ...[
+                                          Column(
+                                            children: exercise.weights
+                                                .map<Widget>((weightData) {
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16.0),
+                                                child: Text(
+                                                  'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              );
+                                            }).toList(),
                                           ),
                                         ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      // Display Series only when exercise is expanded
-                                      if (exerciseExpanded[index]
-                                          [exerciseIndex]) ...[
-                                        for (var series
-                                            in exercises[exerciseIndex]
-                                                ['Series'])
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 50),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Peso: ${series['Peso']}kg           Reps: ${series['Rep']}',
-                                                  style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 16),
-                                                ),
-                                                const SizedBox(height: 4),
-                                              ],
-                                            ),
-                                          )
                                       ],
-                                      const SizedBox(height: 10),
-                                    ],
-                                  ),
+                                    );
+                                  },
+                                ),
                               ],
-                            ],
+                            ),
                           ],
                         ),
                       ),
@@ -517,4 +436,27 @@ class _MPageState extends State<MPage> {
           ),
         ));
   }
+}
+
+// Model classes
+class Exercise {
+  String name;
+  bool completed;
+  bool isExpanded;
+  List<Map<String, dynamic>> weights; // List of weights and reps
+
+  Exercise(
+      {required this.name,
+      required this.completed,
+      required this.isExpanded,
+      List<Map<String, dynamic>>? weights})
+      : weights = weights ?? [];
+}
+
+class Training {
+  String name;
+  List<Exercise> exercises;
+
+  Training({required this.name, List<Exercise>? exercises})
+      : exercises = exercises ?? [];
 }

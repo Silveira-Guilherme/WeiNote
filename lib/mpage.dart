@@ -1,10 +1,15 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'dart:async'; // For Timer
 import 'package:flutter/material.dart';
+import 'package:gymdo/trainings/edit.dart';
 import 'package:gymdo/trainings/select.dart';
+import 'package:gymdo/trainings/trainings.dart';
 import 'package:intl/intl.dart';
 import 'sql.dart';
 import 'package:gymdo/trainings/create.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:gymdo/trainings/trainings.dart' as tr;
 
 class MPage extends StatefulWidget {
   @override
@@ -17,7 +22,7 @@ class _MPageState extends State<MPage> {
   String dateStr = '', dayStr = '';
 
   // Replace this with a list of Training objects
-  List<Training> trainings = [];
+  List<tr.Training> trainings = [];
   DateTime now = DateTime.now();
 
   // Chronometer variables
@@ -60,44 +65,46 @@ class _MPageState extends State<MPage> {
         LOWER(td.Day) = '$dayStr'
     """);
 
-    // Clear previous data
+// Clear previous data
     trainings.clear();
 
-    // Group exercises by training name using the Training class
+// Group exercises by training name using the Training class
     Map<String, Training> trainingMap = {};
 
     for (var row in trainingData) {
-      String trainingName =
-          row['TrainingName']?.toString() ?? 'Unnamed Training';
-      String exerciseName = row['ExerciseName'] ?? 'Unnamed Exercise';
+      String trainingName = row['TrainingName'].toString();
+      String? exerciseName = row['ExerciseName'];
 
       // Initialize training if it doesn't exist
       if (!trainingMap.containsKey(trainingName)) {
         trainingMap[trainingName] = Training(name: trainingName, exercises: []);
       }
 
-      // Add exercise information
-      var training = trainingMap[trainingName]!;
-      var exercise = training.exercises.firstWhere(
-        (ex) => ex.name == exerciseName,
-        orElse: () => Exercise(
-            name: exerciseName,
-            completed: false,
-            isExpanded: false,
-            weights: []),
-      );
+      // Only add exercises if exerciseName is not null
+      if (exerciseName != null) {
+        // Add exercise information
+        var training = trainingMap[trainingName]!;
+        var exercise = training.exercises.firstWhere(
+          (ex) => ex.name == exerciseName,
+          orElse: () => Exercise(
+              name: exerciseName,
+              completed: false,
+              isExpanded: false,
+              weights: []),
+        );
 
-      // Add series information if not already present
-      if (!training.exercises.contains(exercise)) {
-        training.exercises.add(exercise);
-      }
+        // Add exercise to training if it's not already added
+        if (!training.exercises.contains(exercise)) {
+          training.exercises.add(exercise);
+        }
 
-      // Add weight and rep information
-      if (row['Peso'] != null && row['Rep'] != null) {
-        exercise.weights.add({
-          'Peso': row['Peso'],
-          'Rep': row['Rep'],
-        });
+        // Add weight and rep information
+        if (row['Peso'] != null && row['Rep'] != null) {
+          exercise.weights.add({
+            'Peso': row['Peso'],
+            'Rep': row['Rep'],
+          });
+        }
       }
     }
 
@@ -278,7 +285,6 @@ class _MPageState extends State<MPage> {
               ),
               const SizedBox(height: 10),
 
-              // Training exercises display
               Expanded(
                 child: ListView.builder(
                   itemCount: trainings.length,
@@ -293,89 +299,138 @@ class _MPageState extends State<MPage> {
                         padding: const EdgeInsets.all(8.0),
                         child: Column(
                           children: [
+                            // Main ExpansionTile for training
                             ExpansionTile(
-                              title: Text(
-                                training.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                ),
-                              ),
-                              children: [
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: training.exercises.length,
-                                  itemBuilder: (context, exIndex) {
-                                    Exercise exercise =
-                                        training.exercises[exIndex];
-
-                                    return Column(
-                                      children: [
-                                        ListTile(
-                                          title: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                exercise.name,
-                                                style: const TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Checkbox(
-                                                    value: exercise.completed,
-                                                    onChanged: (bool? value) {
-                                                      setState(() {
-                                                        exercise.completed =
-                                                            value!;
-                                                      });
-                                                    },
-                                                    activeColor: Colors.red,
-                                                  ),
-                                                  IconButton(
-                                                    icon: Icon(
-                                                      exercise.isExpanded
-                                                          ? Icons.expand_less
-                                                          : Icons.expand_more,
-                                                      color: Colors.white,
-                                                    ),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        exercise.isExpanded =
-                                                            !exercise
-                                                                .isExpanded;
-                                                      });
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                              title: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      training.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  // Edit Training Button Inline
+                                  IconButton(
+                                    onPressed: () {
+                                      // Navigate to EditTrainingPage with the current training data
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              EditTrainingPage(
+                                            training:
+                                                training, // Pass current training to edit
                                           ),
                                         ),
-                                        if (exercise.isExpanded) ...[
-                                          Column(
-                                            children: exercise.weights
-                                                .map<Widget>((weightData) {
-                                              return Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 16.0),
-                                                child: Text(
-                                                  'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
+                                      ).then((updatedTraining) {
+                                        // When returning from the edit page, update the training list
+                                        if (updatedTraining != null) {
+                                          setState(() {
+                                            // Update the training in the list
+                                            training.exercises = updatedTraining
+                                                .exercises; // Adjust according to how you handle updated training
+                                          });
+                                        }
+                                      });
+                                    },
+                                    icon: const Icon(Icons.edit),
+                                    color: Colors.white, // Button color
+                                    padding: EdgeInsets
+                                        .zero, // Remove default padding
+                                  ),
+                                ],
+                              ),
+                              iconColor: Colors.white,
+                              collapsedIconColor: Colors.white,
+                              children: [
+                                // Check if there are exercises for this training
+                                if (training.exercises.isEmpty)
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Center(
+                                      child: Text(
+                                        'No exercises available',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: training.exercises.length,
+                                    itemBuilder: (context, exIndex) {
+                                      Exercise exercise =
+                                          training.exercises[exIndex];
+
+                                      return Column(
+                                        children: [
+                                          // Exercise ExpansionTile
+                                          ExpansionTile(
+                                            title: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  exercise.name,
                                                   style: const TextStyle(
                                                       color: Colors.white),
                                                 ),
-                                              );
-                                            }).toList(),
+                                                Row(
+                                                  children: [
+                                                    Checkbox(
+                                                      value: exercise.completed,
+                                                      onChanged: (bool? value) {
+                                                        setState(() {
+                                                          exercise.completed =
+                                                              value!;
+                                                        });
+                                                      },
+                                                      activeColor: Colors.red,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            iconColor: Colors.white,
+                                            collapsedIconColor: Colors.white,
+                                            children: exercise.weights.isEmpty
+                                                ? [
+                                                    const Text(
+                                                      'No weights available',
+                                                      style: TextStyle(
+                                                          color: Colors.grey),
+                                                    )
+                                                  ]
+                                                : exercise.weights
+                                                    .map<Widget>((weightData) {
+                                                    return Padding(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 16.0,
+                                                          vertical: 4.0),
+                                                      child: Text(
+                                                        'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
+                                                        style: const TextStyle(
+                                                            color:
+                                                                Colors.white),
+                                                      ),
+                                                    );
+                                                  }).toList(),
                                           ),
                                         ],
-                                      ],
-                                    );
-                                  },
-                                ),
+                                      );
+                                    },
+                                  ),
                               ],
                             ),
                           ],
@@ -384,7 +439,7 @@ class _MPageState extends State<MPage> {
                     );
                   },
                 ),
-              ),
+              )
             ]),
           ),
           floatingActionButton: SpeedDial(
@@ -436,27 +491,4 @@ class _MPageState extends State<MPage> {
           ),
         ));
   }
-}
-
-// Model classes
-class Exercise {
-  String name;
-  bool completed;
-  bool isExpanded;
-  List<Map<String, dynamic>> weights; // List of weights and reps
-
-  Exercise(
-      {required this.name,
-      required this.completed,
-      required this.isExpanded,
-      List<Map<String, dynamic>>? weights})
-      : weights = weights ?? [];
-}
-
-class Training {
-  String name;
-  List<Exercise> exercises;
-
-  Training({required this.name, List<Exercise>? exercises})
-      : exercises = exercises ?? [];
 }

@@ -44,53 +44,68 @@ class _MPageState extends State<MPage> {
     // Extract the weekday
     dayStr = DateFormat('EEEE', 'pt_BR').format(now).toLowerCase();
 
-    // Fetch the current training name and associated exercises
+    // Fetch the current training name, associated exercises, and days
     List<dynamic> trainingData = await query("""
-      SELECT 
-        t.Name as TrainingName, 
-        e.Name as ExerciseName, 
-        s.Peso, 
-        s.Rep 
-      FROM 
-        Tr t 
-      LEFT JOIN 
-        Tr_Day td ON t.IdTr = td.CodTr 
-      LEFT JOIN 
-        Tr_Exer te ON t.IdTr = te.CodTr 
-      LEFT JOIN 
-        Exer e ON te.CodExer = e.IdExer 
-      LEFT JOIN 
-        Serie s ON e.IdExer = s.CodExer  
-      WHERE 
-        LOWER(td.Day) = '$dayStr'
-    """);
+    SELECT 
+      t.IdTr,          -- Fetching Training ID
+      t.Name as TrainingName, 
+      e.IdExer,        -- Fetching Exercise ID
+      e.Name as ExerciseName, 
+      s.Peso, 
+      s.Rep,
+      td.Day as TrainingDay -- Fetching the day of training
+    FROM 
+      Tr t 
+    LEFT JOIN 
+      Tr_Day td ON t.IdTr = td.CodTr 
+    LEFT JOIN 
+      Tr_Exer te ON t.IdTr = te.CodTr 
+    LEFT JOIN 
+      Exer e ON te.CodExer = e.IdExer 
+    LEFT JOIN 
+      Serie s ON e.IdExer = s.CodExer  
+    WHERE 
+      t.IdTr IS NOT NULL
+  """);
 
-// Clear previous data
+    // Clear previous data
     trainings.clear();
 
-// Group exercises by training name using the Training class
+    // Group exercises by training name using the Training class
     Map<String, Training> trainingMap = {};
 
     for (var row in trainingData) {
       String trainingName = row['TrainingName'].toString();
       String? exerciseName = row['ExerciseName'];
+      String? trainingDay = row['TrainingDay']?.toString().toLowerCase();
+      int trainingId = row['IdTr']; // Retrieve Training ID
+      int? exerciseId = row['IdExer']; // Retrieve Exercise ID
 
       // Initialize training if it doesn't exist
       if (!trainingMap.containsKey(trainingName)) {
-        trainingMap[trainingName] = Training(name: trainingName, exercises: []);
+        trainingMap[trainingName] = Training(
+            id: trainingId, name: trainingName, exercises: [], days: []);
+      }
+
+      var training = trainingMap[trainingName]!;
+
+      // Add the training day if it's not already in the list
+      if (trainingDay != null && !training.days.contains(trainingDay)) {
+        training.days.add(trainingDay);
       }
 
       // Only add exercises if exerciseName is not null
-      if (exerciseName != null) {
+      if (exerciseName != null && exerciseId != null) {
         // Add exercise information
-        var training = trainingMap[trainingName]!;
         var exercise = training.exercises.firstWhere(
           (ex) => ex.name == exerciseName,
           orElse: () => Exercise(
-              name: exerciseName,
-              completed: false,
-              isExpanded: false,
-              weights: []),
+            id: exerciseId, // Set Exercise ID
+            name: exerciseName,
+            completed: false,
+            isExpanded: false,
+            weights: [],
+          ),
         );
 
         // Add exercise to training if it's not already added
@@ -117,6 +132,21 @@ class _MPageState extends State<MPage> {
   void initState() {
     super.initState();
     dateStr = DateFormat('d', 'pt_BR').format(now).toString();
+    initInfo();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data when the page is returned to
+    initInfo();
+  }
+
+  // Optionally, if you want to check updates when returning to this page,
+  // you can also implement this method:
+  @override
+  void didUpdateWidget(MPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
     initInfo();
   }
 
@@ -324,8 +354,8 @@ class _MPageState extends State<MPage> {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               EditTrainingPage(
-                                            training:
-                                                training, // Pass current training to edit
+                                            training: training,
+                                            // Pass current training to edit
                                           ),
                                         ),
                                       ).then((updatedTraining) {

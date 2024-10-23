@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'trainings.dart';
+import '/../sql.dart'; // Adjust import according to your structure
 
 class EditTrainingPage extends StatefulWidget {
-  final Training training; // Pass the existing training data to edit
+  final Training training; // Existing training to edit
 
   EditTrainingPage({required this.training});
 
@@ -15,22 +16,38 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
   List<TextEditingController> exerciseControllers = [];
   List<List<TextEditingController>> weightControllers = [];
 
+  List<String> weekDays = [
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+    'Domingo'
+  ];
+
+  List<bool> selectedDays = List.generate(7, (index) => false);
+
   @override
   void initState() {
     super.initState();
-
-    // Initialize controllers with existing data
     trainingNameController = TextEditingController(text: widget.training.name);
 
     for (var exercise in widget.training.exercises) {
       exerciseControllers.add(TextEditingController(text: exercise.name));
       List<TextEditingController> tempWeights = [];
-
-      // Initialize weight controllers with existing weights
       for (var weight in exercise.weights) {
         tempWeights.add(TextEditingController(text: weight['Peso'].toString()));
       }
       weightControllers.add(tempWeights);
+    }
+
+    for (int i = 0; i < weekDays.length; i++) {
+      if (widget.training.days
+          .map((day) => day.toLowerCase())
+          .contains(weekDays[i].toLowerCase())) {
+        selectedDays[i] = true;
+      }
     }
   }
 
@@ -48,67 +65,82 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     super.dispose();
   }
 
-  // Function to add a new exercise
-  void addExercise() {
-    setState(() {
-      exerciseControllers.add(TextEditingController());
-      weightControllers
-          .add([TextEditingController()]); // Start with one weight field
-    });
-  }
-
-  // Function to remove an exercise
-  void removeExercise(int index) {
-    setState(() {
-      exerciseControllers[index].dispose();
-      exerciseControllers.removeAt(index);
-      weightControllers[index].forEach((controller) => controller.dispose());
-      weightControllers.removeAt(index);
-    });
-  }
-
-  // Function to save the updated training
-  void saveTraining() {
-    // Collect updated data
-    String updatedTrainingName = trainingNameController.text;
-    List<Exercise> updatedExercises = [];
-
-    for (int i = 0; i < exerciseControllers.length; i++) {
-      List<Map<String, dynamic>> weights = [];
-      for (var weightController in weightControllers[i]) {
-        // Update reps accordingly (assuming default to "X" if not provided)
-        weights.add({
-          'Peso': weightController.text,
-          'Rep': 'X' // Replace with actual rep input if you have it
-        });
-      }
-      updatedExercises.add(
-        Exercise(
-          name: exerciseControllers[i].text,
-          completed: false,
-          isExpanded: false,
-          weights: weights,
-        ),
-      );
+  Future<void> saveTraining() async {
+    String trainingName = trainingNameController.text;
+    if (trainingName.isEmpty) {
+      _showErrorDialog('Training name cannot be empty');
+      return;
     }
 
-    // Return or update the training object with the new data
-    Training updatedTraining =
-        Training(name: updatedTrainingName, exercises: updatedExercises);
+    // Update training name
+    await DatabaseHelper().updateTraining(widget.training.id, trainingName);
 
-    // Navigate back with updated training
-    Navigator.pop(context, updatedTraining);
+    // Update exercises
+    for (int i = 0; i < exerciseControllers.length; i++) {
+      String exerciseName = exerciseControllers[i].text;
+      if (exerciseName.isEmpty) {
+        _showErrorDialog('Exercise name cannot be empty');
+        return;
+      }
+
+      // Update exercise by id
+      await DatabaseHelper()
+          .updateExercise(widget.training.exercises[i].id, exerciseName);
+
+      // Optionally handle weights update if necessary
+      // Update weights logic goes here if needed
+    }
+
+    // Clear existing training days
+    await DatabaseHelper().clearTrainingDays(widget.training.id);
+
+    // Insert selected training days
+    for (int i = 0; i < selectedDays.length; i++) {
+      if (selectedDays[i]) {
+        String day = weekDays[i];
+        await DatabaseHelper().insertTrainingDay(widget.training.id, day);
+      }
+    }
+//widget.onSave();
+    Navigator.pop(context); // Go back after updating
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Training'),
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Edit Training',
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 24.0, color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: saveTraining,
+            color: Colors.white,
           ),
         ],
       ),
@@ -123,64 +155,34 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                 style: const TextStyle(color: Colors.black),
               ),
               const SizedBox(height: 20),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: exerciseControllers.length,
-                itemBuilder: (context, index) {
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: exerciseControllers[index],
-                              decoration: const InputDecoration(
-                                labelText: 'Exercise Name',
-                              ),
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => removeExercise(index),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Column(
-                        children: List.generate(
-                          weightControllers[index].length,
-                          (weightIndex) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: TextFormField(
-                                controller: weightControllers[index]
-                                    [weightIndex],
-                                decoration: InputDecoration(
-                                  labelText: 'Weight ${weightIndex + 1}',
-                                  labelStyle:
-                                      const TextStyle(color: Colors.black),
-                                ),
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(color: Colors.black),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+              Wrap(
+                spacing: 10,
+                children: List.generate(weekDays.length, (index) {
+                  return ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          selectedDays[index] ? Colors.black : Colors.white,
+                      foregroundColor:
+                          selectedDays[index] ? Colors.white : Colors.black,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        selectedDays[index] = !selectedDays[index];
+                      });
+                    },
+                    child: Text(weekDays[index]),
                   );
-                },
-              ),
-              ElevatedButton(
-                onPressed: addExercise,
-                child: const Text('Add Exercise'),
+                }),
               ),
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Logic to add exercise inputs
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gymdo/main.dart'; // Ensure this is correctly importing your colors
 import 'package:gymdo/trainings/trainingdetails.dart';
-import '/../sql.dart';
+import '/../sql.dart'; // Import your database helper
 
 class TrainingListPage extends StatefulWidget {
   @override
@@ -25,7 +26,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
   @override
   void initState() {
     super.initState();
-    fetchTrainings(); // Load trainings when page is initialized
+    fetchTrainings(); // Load trainings when the page is initialized
   }
 
   @override
@@ -59,24 +60,42 @@ class _TrainingListPageState extends State<TrainingListPage> {
                   itemBuilder: (context, index) {
                     var training = trainings[index];
                     return Card(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.black,
-                          child: Text(
-                            (index + 1).toString(),
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        title: Text(training['Name'] ?? 'Unnamed Training'),
+                      margin: const EdgeInsets.all(10),
+                      color:
+                          accentColor1, // Ensure this color is defined in your main.dart
+                      elevation: 5,
+                      child: InkWell(
+                        // Use InkWell for touch feedback
                         onTap: () {
                           Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TrainingDetailsPage(
-                                  trainingId: training['IdTr']),
-                            ),
-                          );
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TrainingDetailsPage(
+                                  trainingId: training[
+                                      'IdTr'], // Use training['IdTr'] here
+                                ),
+                              ));
                         },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 8), // Spacing between items
+                              Text(
+                                training['Name'] ?? 'Unnamed Training',
+                                style: TextStyle(
+                                  color:
+                                      secondaryColor, // Ensure this color is defined in your main.dart
+                                  fontSize:
+                                      20, // Increase font size for better visibility
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },

@@ -150,12 +150,6 @@ class _CPageState extends State<CPage> {
 
           if (trainingId != null) {
             // Navigate to the ExerciseListPage and pass the trainingId
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ExerciseListPage(trainingId: trainingId),
-              ),
-            );
           }
         },
         child: const Icon(Icons.add),

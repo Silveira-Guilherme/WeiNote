@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/createexec.dart';
 import '/../sql.dart'; // Adjust your import
+import 'package:gymdo/trainings/trainings.dart'; // Import the Training class
 
 class ExerciseListPage extends StatefulWidget {
-  final int trainingId; // Accept the training ID
+  final Training
+      training; // Accept the whole Training object instead of just the ID
 
-  const ExerciseListPage({Key? key, required this.trainingId})
-      : super(key: key);
+  const ExerciseListPage({Key? key, required this.training}) : super(key: key);
 
   @override
   _ExerciseListPageState createState() => _ExerciseListPageState();
@@ -60,7 +61,7 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
       if (completed[i]) {
         int exerciseId = exercises[i]['IdExer'];
         await dbHelper.customQuery(
-            "INSERT INTO Tr_Exer (CodExer, CodTr) VALUES ($exerciseId, ${widget.trainingId})");
+            "INSERT INTO Tr_Exer (CodExer, CodTr) VALUES ($exerciseId, ${widget.training.id})"); // Use the training ID from the Training object
       }
     }
 
@@ -73,7 +74,8 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Select Exercises'),
+        title: Text(
+            'Select Exercises for ${widget.training.name}'), // Display the training name in the title
         centerTitle: true,
       ),
       body: isLoading

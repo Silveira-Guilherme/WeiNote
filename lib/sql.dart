@@ -63,7 +63,8 @@ class DatabaseHelper {
     });
   }
 
-  Future<List<Map<String, dynamic>>> customQuery(String sqlQuery) async {
+  Future<List<Map<String, dynamic>>> customQuery(String sqlQuery,
+      [String? string]) async {
     Database db = await database;
     return await db.rawQuery(sqlQuery);
   }

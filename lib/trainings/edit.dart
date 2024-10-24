@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'trainings.dart';
-import '/../sql.dart'; // Adjust import according to your structure
+import '/../sql.dart';
+import '/../mpage.dart';
+// Adjust import according to your structure
 
 class EditTrainingPage extends StatefulWidget {
   final Training training; // Existing training to edit
+  final VoidCallback onSave; // Callback to trigger on save
 
-  EditTrainingPage({required this.training});
+  EditTrainingPage({required this.training, required this.onSave});
 
   @override
   _EditTrainingPageState createState() => _EditTrainingPageState();
@@ -102,7 +105,10 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
       }
     }
 //widget.onSave();
+
+    widget.onSave(); // Call the callback to refresh data on MPage
     Navigator.pop(context); // Go back after updating
+    // Go back after updating
   }
 
   void _showErrorDialog(String message) {

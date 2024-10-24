@@ -99,15 +99,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ExerciseListPage(
-                  trainingId: widget.trainingId), // Pass trainingId here
-            ),
-          );
-        },
+        onPressed: () {},
         child: const Icon(Icons.add),
       ),
     );

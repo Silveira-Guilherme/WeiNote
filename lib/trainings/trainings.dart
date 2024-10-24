@@ -27,4 +27,8 @@ class Training {
     List<String>? days,
   })  : exercises = exercises ?? [],
         days = days ?? []; // Ensure non-null initialization
+
+  String GetTraining() {
+    return name;
+  }
 }

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/main.dart'; // Ensure this is correctly importing your colors
+import 'package:gymdo/trainings/create.dart';
 import 'package:gymdo/trainings/trainingdetails.dart';
 import '/../sql.dart'; // Import your database helper
 
 class TrainingListPage extends StatefulWidget {
+  const TrainingListPage({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _TrainingListPageState createState() => _TrainingListPageState();
 }
 
@@ -36,16 +41,16 @@ class _TrainingListPageState extends State<TrainingListPage> {
         preferredSize:
             const Size.fromHeight(70.0), // Adjust the height of the AppBar
         child: AppBar(
-          backgroundColor: Colors.black,
+          backgroundColor: primaryColor,
           iconTheme: const IconThemeData(
-            color: Colors.white, // Change the back button color to white
+            color: secondaryColor, // Change the back button color to white
           ),
           title: const Text(
             'All Trainings',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 24.0, // Adjust the font size
-              color: Colors.white,
+              color: secondaryColor,
             ),
           ),
           centerTitle: true,
@@ -68,23 +73,25 @@ class _TrainingListPageState extends State<TrainingListPage> {
                         // Use InkWell for touch feedback
                         onTap: () {
                           Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TrainingDetailsPage(
-                                  trainingId: training[
-                                      'IdTr'], // Use training['IdTr'] here
-                                ),
-                              ));
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TrainingDetailsPage(
+                                trainingId: training[
+                                    'IdTr'], // Use training['IdTr'] here
+                              ),
+                            ),
+                          );
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment
+                                .spaceBetween, // Space between text and icon
                             children: [
-                              SizedBox(height: 8), // Spacing between items
+                              // Training name text
                               Text(
                                 training['Name'] ?? 'Unnamed Training',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color:
                                       secondaryColor, // Ensure this color is defined in your main.dart
                                   fontSize:
@@ -92,7 +99,22 @@ class _TrainingListPageState extends State<TrainingListPage> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              // Eye icon
+                              IconButton(
+                                icon: const Icon(Icons.remove_red_eye,
+                                    color: secondaryColor),
+                                onPressed: () {
+                                  // Navigate to TrainingDetailsPage when the icon is pressed
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TrainingDetailsPage(
+                                        trainingId: training['IdTr'],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -100,6 +122,43 @@ class _TrainingListPageState extends State<TrainingListPage> {
                     );
                   },
                 ),
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        backgroundColor: primaryColor,
+        foregroundColor: secondaryColor,
+        overlayOpacity: 0.5,
+        spacing: 12,
+        children: [
+          SpeedDialChild(
+            child: const Icon(
+              Icons.add,
+            ),
+            label: 'Add Training',
+            foregroundColor: secondaryColor,
+            backgroundColor: accentColor2,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CPage()),
+              );
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.edit),
+            label: 'Edit',
+            foregroundColor: secondaryColor,
+            backgroundColor: primaryColor,
+            onTap: () {},
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.visibility),
+            label: 'See All Trainings',
+            foregroundColor: secondaryColor,
+            backgroundColor: primaryColor,
+            onTap: () {},
+          ),
+        ],
+      ),
     );
   }
 }

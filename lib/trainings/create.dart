@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gymdo/trainings/selectexec.dart';
 import 'package:intl/intl.dart';
 import '/../sql.dart';
 
 class CPage extends StatefulWidget {
+  const CPage({super.key});
+
   @override
   _CPageState createState() => _CPageState();
 }
@@ -28,8 +29,9 @@ class _CPageState extends State<CPage> {
 
   bool isLoading = false;
 
-  // TextController for training name input
+  // TextControllers for training name and type input
   TextEditingController trainingNameController = TextEditingController();
+  TextEditingController trainingTypeController = TextEditingController();
 
   // Initialize the state
   @override
@@ -38,10 +40,12 @@ class _CPageState extends State<CPage> {
     data = DateFormat('d', 'pt_BR').format(now).toString(); // Initial date
   }
 
-  // Submit selected days and training name
+  // Submit selected days, training name, and type
   Future<int?> submitTraining() async {
     String trainingName = trainingNameController.text;
-    if (trainingName.isEmpty) return null;
+    String trainingType = trainingTypeController.text;
+
+    if (trainingName.isEmpty || trainingType.isEmpty) return null;
 
     // Process selected days
     List<String> selectedWeekDays = [];
@@ -52,9 +56,12 @@ class _CPageState extends State<CPage> {
     }
 
     if (selectedWeekDays.isNotEmpty) {
-      // Insert the new training into the 'Tr' table and get the inserted IdTr
+      // Insert the new training into the 'Tr' table with Name and Type
       int trainingId = await dbHelper.database.then((db) {
-        return db.insert('Tr', {'Name': trainingName});
+        return db.insert('Tr', {
+          'Name': trainingName,
+          'Type': trainingType, // Insert the training type
+        });
       });
 
       // Insert selected days into the 'Tr_Day' table using the new training ID
@@ -67,7 +74,9 @@ class _CPageState extends State<CPage> {
         });
       }
 
+      // Reset inputs after submission
       trainingNameController.clear();
+      trainingTypeController.clear();
       setState(() {
         selectedDays.fillRange(
             0, selectedDays.length, false); // Reset selection
@@ -110,6 +119,16 @@ class _CPageState extends State<CPage> {
               controller: trainingNameController,
               decoration: const InputDecoration(
                 labelText: "Training Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Training Type Input
+            TextField(
+              controller: trainingTypeController,
+              decoration: const InputDecoration(
+                labelText: "Training Type",
                 border: OutlineInputBorder(),
               ),
             ),

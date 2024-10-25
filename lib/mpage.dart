@@ -50,6 +50,7 @@ class _MPageState extends State<MPage> {
   SELECT 
     t.IdTr,          -- Fetching Training ID
     t.Name as TrainingName, 
+    t.Type as TrainingType,
     e.IdExer,        -- Fetching Exercise ID
     e.Name as ExerciseName, 
     s.Peso, 
@@ -77,7 +78,9 @@ class _MPageState extends State<MPage> {
 
     for (var row in trainingData) {
       String trainingName = row['TrainingName'].toString();
+      String? trainingType = row['TrainingType'];
       String? exerciseName = row['ExerciseName'];
+
       String? trainingDay = row['TrainingDay']?.toString().toLowerCase();
       int trainingId = row['IdTr']; // Retrieve Training ID
       int? exerciseId = row['IdExer']; // Retrieve Exercise ID
@@ -87,7 +90,11 @@ class _MPageState extends State<MPage> {
         // Initialize training if it doesn't exist
         if (!trainingMap.containsKey(trainingName)) {
           trainingMap[trainingName] = Training(
-              id: trainingId, name: trainingName, exercises: [], days: []);
+              id: trainingId,
+              name: trainingName,
+              type: trainingType,
+              exercises: [],
+              days: []);
         }
 
         var training = trainingMap[trainingName]!;
@@ -317,171 +324,193 @@ class _MPageState extends State<MPage> {
               const SizedBox(height: 10),
 
               Expanded(
-                child: ListView.builder(
-                    itemCount: trainings.length,
-                    itemBuilder: (context, index) {
-                      Training training = trainings[index];
+                child: trainings.length > 0
+                    ? ListView.builder(
+                        itemCount: trainings.length,
+                        itemBuilder: (context, index) {
+                          if (trainings.length >= 1) {
+                            Training training = trainings[index];
 
-                      return Card(
-                        margin: const EdgeInsets.all(10),
-                        color: accentColor1,
-                        elevation: 5,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: [
-                              // Main ExpansionTile for training
-                              ExpansionTile(
-                                title: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                            return Card(
+                              margin: const EdgeInsets.all(10),
+                              color: accentColor1,
+                              elevation: 5,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
                                   children: [
-                                    Expanded(
-                                      child: Text(
-                                        training.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: secondaryColor,
-                                          fontSize: 20,
-                                        ),
-                                      ),
-                                    ),
-                                    // Edit Training Button Inline
-                                    IconButton(
-                                      onPressed: () {
-                                        // Navigate to EditTrainingPage with the current training data
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                EditTrainingPage(
-                                              training: training,
-                                              onSave: initInfo,
-                                              // Pass current training to edit
+                                    // Main ExpansionTile for training
+                                    ExpansionTile(
+                                      title: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              training.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: secondaryColor,
+                                                fontSize: 20,
+                                              ),
                                             ),
                                           ),
-                                        ).then((updatedTraining) {
-                                          // When returning from the edit page, update the training list
-                                          if (updatedTraining != null) {
-                                            setState(() {
-                                              // Update the training in the list
-                                              training.exercises = updatedTraining
-                                                  .exercises; // Adjust according to how you handle updated training
-                                            });
-                                          }
-                                        });
-                                      },
-                                      icon: const Icon(Icons.edit),
-                                      color: secondaryColor,
-                                      padding: EdgeInsets
-                                          .zero, // Remove default padding
-                                    ),
-                                  ],
-                                ),
-                                iconColor: secondaryColor,
-                                collapsedIconColor: secondaryColor,
-                                children: [
-                                  // Check if there are exercises for this training
-                                  if (training.exercises.isEmpty)
-                                    const Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 8.0),
-                                      child: Center(
-                                        child: Text(
-                                          'No exercises available',
-                                          style: TextStyle(
+                                          // Edit Training Button Inline
+                                          IconButton(
+                                            onPressed: () {
+                                              // Navigate to EditTrainingPage with the current training data
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      EditTrainingPage(
+                                                    trainingId: training.id,
+                                                    onSave: initInfo,
+                                                    // Pass current training to edit
+                                                  ),
+                                                ),
+                                              ).then((updatedTraining) {
+                                                // When returning from the edit page, update the training list
+                                                if (updatedTraining != null) {
+                                                  setState(() {
+                                                    // Update the training in the list
+                                                    training.exercises =
+                                                        updatedTraining
+                                                            .exercises; // Adjust according to how you handle updated training
+                                                  });
+                                                }
+                                              });
+                                            },
+                                            icon: const Icon(Icons.edit),
                                             color: secondaryColor,
+                                            padding: EdgeInsets
+                                                .zero, // Remove default padding
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    )
-                                  else
-                                    ListView.builder(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      itemCount: training.exercises.length,
-                                      itemBuilder: (context, exIndex) {
-                                        Exercise exercise =
-                                            training.exercises[exIndex];
-
-                                        return Column(
-                                          children: [
-                                            // Exercise ExpansionTile
-                                            ExpansionTile(
-                                              title: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    exercise.name,
-                                                    style: const TextStyle(
-                                                      color: secondaryColor,
-                                                    ),
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      Checkbox(
-                                                          value: exercise
-                                                              .completed,
-                                                          onChanged:
-                                                              (bool? value) {
-                                                            setState(() {
-                                                              exercise.completed =
-                                                                  value!;
-                                                            });
-                                                          },
-                                                          activeColor:
-                                                              accentColor2),
-                                                    ],
-                                                  ),
-                                                ],
+                                      iconColor: secondaryColor,
+                                      collapsedIconColor: secondaryColor,
+                                      children: [
+                                        // Check if there are exercises for this training
+                                        if (training.exercises.isEmpty)
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 8.0),
+                                            child: Center(
+                                              child: Text(
+                                                'No exercises available',
+                                                style: TextStyle(
+                                                  color: secondaryColor,
+                                                ),
                                               ),
-                                              iconColor: secondaryColor,
-                                              collapsedIconColor:
-                                                  secondaryColor,
-                                              children: exercise.weights.isEmpty
-                                                  ? [
-                                                      const Text(
-                                                        'No weights available',
-                                                        style: TextStyle(
-                                                          color: secondaryColor,
-                                                        ),
-                                                      )
-                                                    ]
-                                                  : exercise.weights
-                                                      .map<Widget>(
-                                                          (weightData) {
-                                                      return Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    16.0,
-                                                                vertical: 4.0),
-                                                        child: Text(
-                                                          'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
+                                            ),
+                                          )
+                                        else
+                                          ListView.builder(
+                                            shrinkWrap: true,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            itemCount:
+                                                training.exercises.length,
+                                            itemBuilder: (context, exIndex) {
+                                              Exercise exercise =
+                                                  training.exercises[exIndex];
+
+                                              return Column(
+                                                children: [
+                                                  // Exercise ExpansionTile
+                                                  ExpansionTile(
+                                                    title: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          exercise.name,
                                                           style:
                                                               const TextStyle(
                                                             color:
                                                                 secondaryColor,
                                                           ),
                                                         ),
-                                                      );
-                                                    }).toList(),
-                                            ),
-                                          ],
-                                        );
-                                      },
+                                                        Row(
+                                                          children: [
+                                                            Checkbox(
+                                                                value: exercise
+                                                                    .completed,
+                                                                onChanged:
+                                                                    (bool?
+                                                                        value) {
+                                                                  setState(() {
+                                                                    exercise.completed =
+                                                                        value!;
+                                                                  });
+                                                                },
+                                                                activeColor:
+                                                                    accentColor2),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    iconColor: secondaryColor,
+                                                    collapsedIconColor:
+                                                        secondaryColor,
+                                                    children: exercise
+                                                            .weights.isEmpty
+                                                        ? [
+                                                            const Text(
+                                                              'No weights available',
+                                                              style: TextStyle(
+                                                                color:
+                                                                    secondaryColor,
+                                                              ),
+                                                            )
+                                                          ]
+                                                        : exercise.weights
+                                                            .map<Widget>(
+                                                                (weightData) {
+                                                            return Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          16.0,
+                                                                      vertical:
+                                                                          4.0),
+                                                              child: Text(
+                                                                'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color:
+                                                                      secondaryColor,
+                                                                ),
+                                                              ),
+                                                            );
+                                                          }).toList(),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                      ],
                                     ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ],
+                            );
+                          }
+                        })
+                    : Center(
+                        // Center the text "Quim" when the list is empty
+                        child: Text(
+                          "No trainings saved",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, // Make it bold
+                            fontSize: 16, // Adjust font size
+                            color: primaryColor, // You can customize the color
                           ),
                         ),
-                      );
-                    }),
+                      ),
               )
             ]),
           ),

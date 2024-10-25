@@ -6,9 +6,9 @@ const Color primaryColor =
     Color.fromARGB(255, 0, 0, 0); // Example primary color
 const Color secondaryColor =
     Color.fromARGB(255, 255, 255, 255); // Example secondary color
+//const Color accentColor1 = Color.fromARGB(255, 0, 0, 0);
 const Color accentColor1 = Color.fromARGB(255, 48, 48, 48);
-const Color accentColor2 =
-    Color.fromARGB(255, 255, 0, 0); // Example accent color 2
+const Color accentColor2 = Colors.red; // Example accent color 2
 
 void main() {
   initializeDateFormatting('pt_BR', null);

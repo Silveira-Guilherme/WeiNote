@@ -1,8 +1,5 @@
-// ignore_for_file: non_constant_identifier_names, unused_local_variable
-
 import 'package:flutter/material.dart';
 import 'package:gymdo/mpage.dart';
-
 import 'sql.dart';
 
 class InitPage extends StatefulWidget {
@@ -50,7 +47,7 @@ class _InitPageState extends State<InitPage> {
         child: AppBar(
           backgroundColor: Colors.black,
           title: const Text(
-            'Novo Utilizador',
+            'New User',
             style: TextStyle(
               fontWeight: FontWeight.bold, // Make the text bold
               fontSize: 24.0, // Adjust the font size
@@ -72,13 +69,16 @@ class _InitPageState extends State<InitPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Insere o teu Nome'),
-                  SizedBox(height: 20),
+                  const Text('Insert your Name'),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: _NameController,
+                    cursorColor: Colors.black, // Set the cursor color to black
                     decoration: const InputDecoration(
-                      labelText: 'Nome',
-                      labelStyle: TextStyle(color: Colors.black),
+                      labelText: 'Name',
+                      floatingLabelBehavior: FloatingLabelBehavior
+                          .auto, // Label moves to top when focused
+                      labelStyle: TextStyle(color: Colors.black), // Label color
                       border: OutlineInputBorder(),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
@@ -86,11 +86,17 @@ class _InitPageState extends State<InitPage> {
                               .black, // Change the border color when focused
                         ),
                       ),
-                      // Specify constant color for the label when focused
-                      prefixIcon: Icon(Icons.person),
+                      // Error border when focused
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Colors
+                              .black, // Change error border color when focused
+                        ),
+                      ),
+                      prefixIcon:
+                          Icon(Icons.person, color: Colors.black), // Icon color
                     ),
                   ),
-                  const SizedBox(height: 20),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
@@ -101,7 +107,7 @@ class _InitPageState extends State<InitPage> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
-                      minimumSize: Size(200, 50),
+                      minimumSize: const Size(200, 50),
                     ),
                     child: const Text(
                       'Login',

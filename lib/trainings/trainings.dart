@@ -17,12 +17,14 @@ class Exercise {
 class Training {
   final int id; // Unique identifier for the training
   String name;
+  String? type;
   List<Exercise> exercises;
   List<String> days; // Now it's non-nullable, initialized to an empty list
 
   Training({
     required this.id,
     required this.name,
+    required this.type,
     List<Exercise>? exercises,
     List<String>? days,
   })  : exercises = exercises ?? [],

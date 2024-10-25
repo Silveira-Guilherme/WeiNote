@@ -41,7 +41,7 @@ class DatabaseHelper {
         "CREATE TABLE IF NOT EXISTS Serie(IdSerie INTEGER PRIMARY KEY, Peso INTEGER, Rep INTEGER, CodExer INTEGER, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer))");
 
     await db.execute(
-        "CREATE TABLE IF NOT EXISTS Tr(IdTr INTEGER PRIMARY KEY, Name TEXT)");
+        "CREATE TABLE IF NOT EXISTS Tr(IdTr INTEGER PRIMARY KEY, Name TEXT, Type TEXT)");
 
     await db.execute(
         "CREATE TABLE IF NOT EXISTS Tr_Exer(IdTr_Exer INTEGER PRIMARY KEY, CodExer INTEGER, CodTr INTEGER, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodTr) REFERENCES Tr(IdTr))");
@@ -70,11 +70,11 @@ class DatabaseHelper {
   }
 
   // Update Training
-  Future<int> updateTraining(int id, String name) async {
+  Future<int> updateTraining(int id, String name, String type) async {
     Database db = await database;
     return await db.update(
       'Tr',
-      {'Name': name},
+      {'Name': name, 'Type': type},
       where: 'IdTr = ?',
       whereArgs: [id],
     );
@@ -139,5 +139,51 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getAllTrainings() async {
     Database db = await database;
     return await db.query('Tr');
+  }
+
+  Future<int> updateSeries(
+      int exerciseId, double weight, int repetitions) async {
+    Database db = await database;
+    return await db.update(
+      'Serie',
+      {'Peso': weight, 'Rep': repetitions},
+      where:
+          'CodExer = ?', // Assuming CodExer is the foreign key in Series table
+      whereArgs: [exerciseId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getExerciseById(int id) async {
+    Database db = await database;
+    return await db.query(
+      'Exer', // Table name
+      where: 'IdExer = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getExerciseDetails(int exerciseId) async {
+    Database db = await database;
+
+    // Performing a join to get exercise name, reps and weight
+    String sqlQuery = '''
+    SELECT Exer.Name, Serie.Peso, Serie.Rep
+    FROM Exer
+    JOIN Serie ON Exer.IdExer = Serie.CodExer
+    WHERE Exer.IdExer = ?
+  ''';
+
+    return await db.rawQuery(sqlQuery, [exerciseId]);
+  }
+
+  Future<List<Map<String, dynamic>>> getSeriesByExerciseId(
+      int exerciseId) async {
+    Database db = await database;
+
+    return await db.query(
+      'Serie',
+      where: 'CodExer = ?',
+      whereArgs: [exerciseId],
+    );
   }
 }

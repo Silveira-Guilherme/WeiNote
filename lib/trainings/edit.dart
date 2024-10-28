@@ -123,8 +123,8 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
         return;
       }
 
-      await dbHelper.customQuery("UPDATE Exer SET Name = ? WHERE IdExer = ?",
-          [exerciseName, exerciseId] as String?);
+      // Use the dedicated updateExercise method
+      await dbHelper.updateExercise(exerciseId, exerciseName);
     }
 
     // Clear and reinsert training days

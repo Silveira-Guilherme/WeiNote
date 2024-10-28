@@ -90,8 +90,7 @@ class _EditExercisePageState extends State<EditExercisePage> {
 
     // Validate inputs
     if (exerciseName.isEmpty || seriesControllers.isEmpty) {
-      _showErrorDialog(
-          'Please fill in the exercise name and at least one set.');
+      print('Please fill in the exercise name and at least one set.');
       return;
     }
 
@@ -100,46 +99,48 @@ class _EditExercisePageState extends State<EditExercisePage> {
     // Update exercise name
     await dbHelper.updateExercise(widget.exerciseId, exerciseName);
 
-    // Update the series information
+    // Fetch existing series from the database to identify removed items
+    final existingSeries =
+        await dbHelper.getSeriesByExerciseId(widget.exerciseId);
+    final existingSeriesIds =
+        existingSeries.map((series) => series['IdSerie']).toList();
+
+    // Track the series that were updated or inserted
+    List<int> processedSeriesIds = [];
+
     for (var controller in seriesControllers) {
       String weightText = controller['weight']!.text;
       String repsText = controller['reps']!.text;
 
       // Validate individual weight and reps
       if (weightText.isEmpty || repsText.isEmpty) {
-        _showErrorDialog('Please fill in all fields for each set.');
+        print('Please fill in all fields for each set.');
         return;
       }
 
-      // Assume you have an update method to handle series data
       double weight = double.parse(weightText);
       int reps = int.parse(repsText);
 
-      // Here we assume you have a method to update or insert the series,
-      // otherwise you would need the series ID to update existing series.
-      await dbHelper.updateSeries(widget.exerciseId, weight, reps);
+      if (controller['id'] != null) {
+        // Existing series: Update it
+        await dbHelper.updateSeries(
+            int.parse(controller['id'].toString()), weight, reps);
+        processedSeriesIds.add(int.parse(controller['id'].toString()));
+      } else {
+        // New series: Insert it
+        await dbHelper.insertSeries(widget.exerciseId, weight, reps);
+      }
+    }
+
+    // Identify and delete any removed series
+    for (var id in existingSeriesIds) {
+      if (!processedSeriesIds.contains(id)) {
+        await dbHelper.deleteSeries(id);
+      }
     }
 
     widget.onSave(); // Trigger the save callback
     Navigator.pop(context); // Close the edit page
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Error'),
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override

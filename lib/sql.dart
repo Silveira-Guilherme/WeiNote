@@ -119,46 +119,34 @@ class DatabaseHelper {
     });
   }
 
-  // Method to delete a user
-  Future<int> deleteUser(int id) async {
-    Database db = await database;
-    return await db.delete(
-      'User',
-      where: 'IdUser = ?',
-      whereArgs: [id],
-    );
-  }
-
-  // Method to fetch all exercises
-  Future<List<Map<String, dynamic>>> getAllExercises() async {
-    Database db = await database;
-    return await db.query('Exer');
-  }
-
-  // Method to fetch all trainings
-  Future<List<Map<String, dynamic>>> getAllTrainings() async {
-    Database db = await database;
-    return await db.query('Tr');
-  }
-
-  Future<int> updateSeries(
-      int exerciseId, double weight, int repetitions) async {
+  Future<int> updateSeries(int seriesId, double weight, int reps) async {
     Database db = await database;
     return await db.update(
       'Serie',
-      {'Peso': weight, 'Rep': repetitions},
+      {'Peso': weight, 'Rep': reps},
       where:
-          'CodExer = ?', // Assuming CodExer is the foreign key in Series table
-      whereArgs: [exerciseId],
+          'IdSerie = ?', // Assuming 'IdSerie' is the primary key of the series
+      whereArgs: [seriesId],
     );
   }
 
-  Future<List<Map<String, dynamic>>> getExerciseById(int id) async {
+  // Insert a new series for an exercise
+  Future<int> insertSeries(int exerciseId, double weight, int reps) async {
     Database db = await database;
-    return await db.query(
-      'Exer', // Table name
-      where: 'IdExer = ?',
-      whereArgs: [id],
+    return await db.insert(
+      'Serie',
+      {'CodExer': exerciseId, 'Peso': weight, 'Rep': reps},
+    );
+  }
+
+  // Delete a series by its ID
+  Future<int> deleteSeries(int seriesId) async {
+    Database db = await database;
+    return await db.delete(
+      'Serie',
+      where:
+          'IdSerie = ?', // Assuming 'IdSerie' is the primary key of the series
+      whereArgs: [seriesId],
     );
   }
 

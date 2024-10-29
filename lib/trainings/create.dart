@@ -16,13 +16,13 @@ class _CPageState extends State<CPage> {
 
   // List of weekdays and their selection state
   List<String> weekDays = [
-    'Segunda-feira',
-    'Terça-feira',
-    'Quarta-feira',
-    'Quinta-feira',
-    'Sexta-feira',
-    'Sábado',
-    'Domingo'
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
   List<bool> selectedDays =
       List.generate(7, (index) => false); // 7 days initialized to false
@@ -37,7 +37,7 @@ class _CPageState extends State<CPage> {
   @override
   void initState() {
     super.initState();
-    data = DateFormat('d', 'pt_BR').format(now).toString(); // Initial date
+    data = DateFormat('d', 'en_US').format(now).toString(); // Initial date
   }
 
   // Submit selected days, training name, and type
@@ -48,10 +48,12 @@ class _CPageState extends State<CPage> {
     if (trainingName.isEmpty || trainingType.isEmpty) return null;
 
     // Process selected days
-    List<String> selectedWeekDays = [];
+    List<int> selectedWeekDays = [];
     for (int i = 0; i < selectedDays.length; i++) {
       if (selectedDays[i]) {
-        selectedWeekDays.add(weekDays[i]);
+        // Convert weekday names to corresponding IDs (1-7 for Mon-Sun)
+        selectedWeekDays
+            .add(i + 1); // Assuming 1 = Segunda-feira, ..., 7 = Domingo
       }
     }
 
@@ -65,10 +67,10 @@ class _CPageState extends State<CPage> {
       });
 
       // Insert selected days into the 'Tr_Day' table using the new training ID
-      for (String day in selectedWeekDays) {
+      for (int day in selectedWeekDays) {
         await dbHelper.database.then((db) {
           db.insert('Tr_Day', {
-            'Day': day,
+            'CodDay': day, // Reference to the day ID
             'CodTr': trainingId, // Use the retrieved trainingId here
           });
         });
@@ -169,6 +171,8 @@ class _CPageState extends State<CPage> {
 
           if (trainingId != null) {
             // Navigate to the ExerciseListPage and pass the trainingId
+            // You can use Navigator to push the next page
+            Navigator.pop(context);
           }
         },
         child: const Icon(Icons.add),

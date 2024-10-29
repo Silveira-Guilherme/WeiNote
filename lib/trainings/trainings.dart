@@ -3,15 +3,18 @@ class Exercise {
   String name;
   bool completed;
   bool isExpanded;
+  int order; // Order of the exercise within the training/macro
   List<Map<String, dynamic>> weights; // List of weights and reps
 
   Exercise({
     required this.id,
     required this.name,
-    required this.completed,
-    required this.isExpanded,
+    this.completed = false,
+    this.isExpanded = false,
+    this.order =
+        0, // Default to 0, but should be assigned based on the DB order
     List<Map<String, dynamic>>? weights,
-  }) : weights = weights ?? [];
+  }) : weights = weights ?? []; // Ensure weights are initialized to a list
 }
 
 class Training {
@@ -19,18 +22,35 @@ class Training {
   String name;
   String? type;
   List<Exercise> exercises;
-  List<String> days; // Now it's non-nullable, initialized to an empty list
+  List<String> days; // List of days associated with the training
+  List<Macro> macros; // List of macros associated with the training
 
   Training({
     required this.id,
     required this.name,
-    required this.type,
+    this.type,
     List<Exercise>? exercises,
     List<String>? days,
+    List<Macro>? macros,
   })  : exercises = exercises ?? [],
-        days = days ?? []; // Ensure non-null initialization
+        days = days ?? [], // Initialize to an empty list if null
+        macros = macros ?? []; // Initialize macros to an empty list if null
 
-  String GetTraining() {
+  String getTraining() {
     return name;
   }
+}
+
+// New Macro class to handle macro-level ordering and information
+class Macro {
+  final int order; // Order of the macro within the training
+  String name;
+  List<Exercise> exercises; // Exercises under this macro
+
+  Macro({
+    required this.order,
+    required this.name,
+    List<Exercise>? exercises,
+  }) : exercises =
+            exercises ?? []; // Initialize exercises to an empty list if null
 }

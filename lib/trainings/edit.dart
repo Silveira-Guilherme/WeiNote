@@ -129,12 +129,13 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
 
     // Clear and reinsert training days
     await dbHelper.clearTrainingDays(widget.trainingId);
-    for (int i = 0; i < selectedDays.length; i++) {
+
+    /*for (int i = 0; i < selectedDays.length; i++) {
       if (selectedDays[i]) {
         String day = weekDays[i];
         await dbHelper.insertTrainingDay(widget.trainingId, day);
       }
-    }
+    }*/
 
     widget.onSave();
     Navigator.pop(context);

@@ -1,5 +1,4 @@
 // ignore_for_file: library_private_types_in_public_api
-
 import 'dart:async'; // For Timer
 import 'package:flutter/material.dart';
 import 'package:gymdo/main.dart';
@@ -37,112 +36,102 @@ class _MPageState extends State<MPage> {
 
   Future<void> initInfo() async {
     // Fetch user name
-    List<Map<String, dynamic>> username = await query("SELECT Name FROM User");
+    List<Map<String, dynamic>> username =
+        await dbHelper.customQuery('select name from user');
     names = username.isNotEmpty
-        ? username[0]['Name']?.toString() ?? 'User'
+        ? username[0]['name']?.toString() ?? 'User'
         : 'User';
 
     // Extract the weekday (e.g., Monday, Tuesday)
-    dayStr = DateFormat('EEEE', 'pt_BR').format(now).toLowerCase();
+    dayStr = DateFormat('EEEE', 'en_US').format(now).toLowerCase();
 
-    // Fetch the current training name, associated exercises, and days
-    List<dynamic> trainingData = await query("""
-  SELECT 
-    t.IdTr,          -- Fetching Training ID
-    t.Name as TrainingName, 
-    t.Type as TrainingType,
-    e.IdExer,        -- Fetching Exercise ID
-    e.Name as ExerciseName, 
-    s.Peso, 
-    s.Rep,
-    td.Day as TrainingDay -- Fetching the day of training
-  FROM 
-    Tr t 
-  LEFT JOIN 
-    Tr_Day td ON t.IdTr = td.CodTr 
-  LEFT JOIN 
-    Tr_Exer te ON t.IdTr = te.CodTr 
-  LEFT JOIN 
-    Exer e ON te.CodExer = e.IdExer 
-  LEFT JOIN 
-    Serie s ON e.IdExer = s.CodExer  
-  WHERE 
-    t.IdTr IS NOT NULL
-""");
-
-    // Clear previous data
+    // Clear previous training data
     trainings.clear();
 
-    // Group exercises by training name using the Training class
-    Map<String, Training> trainingMap = {};
+    try {
+      // Your SQL query here
+      List<dynamic> trainingData = await dbHelper.customQuery("""
+      SELECT 
+        t.IdTr, 
+        t.Name AS TrainingName, 
+        t.Type AS TrainingType,
+        e.IdExer, 
+        e.Name AS ExerciseName, 
+        s.Peso, 
+        s.Rep,
+        td.CodDay AS TrainingDay,
+        mt.MacroOrder,
+        te.ExerOrder AS ExerciseOrder
+      FROM 
+        Tr t
+      LEFT JOIN 
+        Tr_Day td ON t.IdTr = td.CodTr 
+      LEFT JOIN 
+        Tr_Exer te ON t.IdTr = te.CodTr 
+      LEFT JOIN 
+        Exer e ON te.CodExer = e.IdExer 
+      LEFT JOIN 
+        Exer_Macro mt ON mt.CodExer = e.IdExer AND mt.CodMacro IN (SELECT CodMacro FROM Tr_Macro WHERE CodTr = t.IdTr)
+      LEFT JOIN 
+        Serie s ON e.IdExer = s.CodExer  
+      LEFT JOIN 
+        Day d ON td.CodDay = d.IdDay
+      WHERE 
+        LOWER(d.name) = '${dayStr.toLowerCase()}' 
+      ORDER BY 
+        t.IdTr, MacroOrder, ExerciseOrder
+    """);
+      print(trainingData);
+      // Temporary map to hold exercises by training ID
+      Map<int, Training> trainingMap = {};
 
-    for (var row in trainingData) {
-      String trainingName = row['TrainingName'].toString();
-      String? trainingType = row['TrainingType'];
-      String? exerciseName = row['ExerciseName'];
-
-      String? trainingDay = row['TrainingDay']?.toString().toLowerCase();
-      int trainingId = row['IdTr']; // Retrieve Training ID
-      int? exerciseId = row['IdExer']; // Retrieve Exercise ID
-
-      // Only consider training sessions for today
-      if (trainingDay == dayStr) {
-        // Initialize training if it doesn't exist
-        if (!trainingMap.containsKey(trainingName)) {
-          trainingMap[trainingName] = Training(
-              id: trainingId,
-              name: trainingName,
-              type: trainingType,
-              exercises: [],
-              days: []);
+      // Process the results and populate the trainings list
+      for (var item in trainingData) {
+        int trainingId = item['IdTr'];
+        // If the training is not already in the map, create a new Training object
+        if (!trainingMap.containsKey(trainingId)) {
+          trainingMap[trainingId] = Training(
+            id: trainingId,
+            name: item['TrainingName'],
+            type: item['TrainingType'],
+            exercises: [], // Initialize with an empty list
+          );
         }
 
-        var training = trainingMap[trainingName]!;
-
-        // Add the training day if it's not already in the list
-        if (trainingDay != null && !training.days.contains(trainingDay)) {
-          training.days.add(trainingDay);
-        }
-
-        // Only add exercises if exerciseName is not null
-        if (exerciseName != null && exerciseId != null) {
-          // Add exercise information
-          var exercise = training.exercises.firstWhere(
-            (ex) => ex.name == exerciseName,
-            orElse: () => Exercise(
-              id: exerciseId, // Set Exercise ID
-              name: exerciseName,
-              completed: false,
-              isExpanded: false,
-              weights: [],
-            ),
+        // Now create an Exercise object for this item
+        if (item['IdExer'] != null) {
+          Exercise exercise = Exercise(
+            id: item['IdExer'],
+            name: item['ExerciseName'],
+            order: item['ExerciseOrder'] ?? 0,
+            weights: [
+              {
+                'Peso': item['Peso'],
+                'Rep': item['Rep'],
+              }
+            ],
           );
 
-          // Add exercise to training if it's not already added
-          if (!training.exercises.contains(exercise)) {
-            training.exercises.add(exercise);
-          }
-
-          // Add weight and rep information
-          if (row['Peso'] != null && row['Rep'] != null) {
-            exercise.weights.add({
-              'Peso': row['Peso'],
-              'Rep': row['Rep'],
-            });
-          }
+          // Add the exercise to the training
+          trainingMap[trainingId]?.exercises.add(exercise);
         }
       }
+
+      // Convert the map back to a list for your trainings variable
+      trainings = trainingMap.values.toList();
+    } catch (error) {
+      // Handle error
+      print('Error fetching training data: $error');
     }
 
-    // Convert the map to a list of trainings for today
-    trainings = trainingMap.values.toList();
+    // Trigger a rebuild
     setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
-    dateStr = DateFormat('d', 'pt_BR').format(now).toString();
+    dateStr = DateFormat('d', 'en_US').format(now).toString();
     initInfo();
   }
 
@@ -153,8 +142,6 @@ class _MPageState extends State<MPage> {
     initInfo();
   }
 
-  // Optionally, if you want to check updates when returning to this page,
-  // you can also implement this method:
   @override
   void didUpdateWidget(MPage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -220,285 +207,287 @@ class _MPageState extends State<MPage> {
           body: RefreshIndicator(
             color: primaryColor,
             onRefresh: () async {
-              await initInfo();
+              initInfo();
+              // For example, you could call initInfo();
             },
-            child: Column(children: [
-              const SizedBox(height: 10),
-              // Date and Chronometer Card
-              SizedBox(
-                height: 200,
-                width: MediaQuery.of(context).size.width - 10,
-                child: Card(
-                  color: accentColor1,
-                  elevation: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width / 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Card(
-                                color: secondaryColor,
-                                elevation: 3,
-                                child: SizedBox(
-                                  width: MediaQuery.of(context).size.width,
-                                  height:
-                                      MediaQuery.of(context).size.height / 7,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        dateStr,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 50.0,
+            child: ListView(
+              children: [
+                const SizedBox(height: 10),
+                // Date and Chronometer Card
+                SizedBox(
+                  height: 200,
+                  width: MediaQuery.of(context).size.width - 10,
+                  child: Card(
+                    color: accentColor1,
+                    elevation: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width / 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Card(
+                                  color: secondaryColor,
+                                  elevation: 3,
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width,
+                                    height:
+                                        MediaQuery.of(context).size.height / 7,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          dateStr,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 50.0,
+                                          ),
                                         ),
-                                      ),
-                                      Text(dayStr),
-                                    ],
+                                        Text(dayStr),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                            ],
+                                const SizedBox(height: 10),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Chronometer Card
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width / 2 - 10,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Card(
-                                color: secondaryColor,
-                                elevation: 3,
-                                child: SizedBox(
-                                  width: MediaQuery.of(context).size.width,
-                                  height:
-                                      MediaQuery.of(context).size.height / 14,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        _formattedTime,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 24.0,
-                                        ),
-                                      )
-                                    ],
+                          const SizedBox(width: 10),
+                          // Chronometer Card
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width / 2 - 10,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Card(
+                                  color: secondaryColor,
+                                  elevation: 3,
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width,
+                                    height:
+                                        MediaQuery.of(context).size.height / 14,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          _formattedTime,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 24.0,
+                                          ),
+                                        )
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  IconButton(
-                                      icon: const Icon(Icons.play_arrow),
-                                      onPressed: _startTimer,
-                                      color: secondaryColor),
-                                  IconButton(
-                                    icon: const Icon(Icons.pause),
-                                    onPressed: _stopTimer,
-                                    color: accentColor2,
-                                  ),
-                                  IconButton(
-                                      icon: const Icon(Icons.stop),
-                                      onPressed: _resetTimer,
-                                      color: accentColor2),
-                                ],
-                              ),
-                            ],
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                        icon: const Icon(Icons.play_arrow),
+                                        onPressed: _startTimer,
+                                        color: secondaryColor),
+                                    IconButton(
+                                      icon: const Icon(Icons.pause),
+                                      onPressed: _stopTimer,
+                                      color: accentColor2,
+                                    ),
+                                    IconButton(
+                                        icon: const Icon(Icons.stop),
+                                        onPressed: _resetTimer,
+                                        color: accentColor2),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-
-              Expanded(
-                child: trainings.length > 0
+                const SizedBox(height: 10),
+                // Your trainings list
+                trainings.length > 0
                     ? ListView.builder(
                         itemCount: trainings.length,
+                        shrinkWrap:
+                            true, // This allows the ListView to take the height of its children
+                        physics:
+                            const NeverScrollableScrollPhysics(), // Prevents scrolling of the inner ListView
                         itemBuilder: (context, index) {
-                          if (trainings.length >= 1) {
-                            Training training = trainings[index];
+                          Training training = trainings[index];
 
-                            return Card(
-                              margin: const EdgeInsets.all(10),
-                              color: accentColor1,
-                              elevation: 5,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  children: [
-                                    // Main ExpansionTile for training
-                                    ExpansionTile(
-                                      title: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              training.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: secondaryColor,
-                                                fontSize: 20,
-                                              ),
-                                            ),
-                                          ),
-                                          // Edit Training Button Inline
-                                          IconButton(
-                                            onPressed: () {
-                                              // Navigate to EditTrainingPage with the current training data
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      EditTrainingPage(
-                                                    trainingId: training.id,
-                                                    onSave: initInfo,
-                                                    // Pass current training to edit
-                                                  ),
-                                                ),
-                                              ).then((updatedTraining) {
-                                                // When returning from the edit page, update the training list
-                                                if (updatedTraining != null) {
-                                                  setState(() {
-                                                    // Update the training in the list
-                                                    training.exercises =
-                                                        updatedTraining
-                                                            .exercises; // Adjust according to how you handle updated training
-                                                  });
-                                                }
-                                              });
-                                            },
-                                            icon: const Icon(Icons.edit),
-                                            color: secondaryColor,
-                                            padding: EdgeInsets
-                                                .zero, // Remove default padding
-                                          ),
-                                        ],
-                                      ),
-                                      iconColor: secondaryColor,
-                                      collapsedIconColor: secondaryColor,
+                          return Card(
+                            margin: const EdgeInsets.all(10),
+                            color: accentColor1,
+                            elevation: 5,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                children: [
+                                  // Main ExpansionTile for training
+                                  ExpansionTile(
+                                    title: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        // Check if there are exercises for this training
-                                        if (training.exercises.isEmpty)
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                vertical: 8.0),
-                                            child: Center(
-                                              child: Text(
-                                                'No exercises available',
-                                                style: TextStyle(
-                                                  color: secondaryColor,
+                                        Expanded(
+                                          child: Text(
+                                            training.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: secondaryColor,
+                                              fontSize: 20,
+                                            ),
+                                          ),
+                                        ),
+                                        // Edit Training Button Inline
+                                        IconButton(
+                                          onPressed: () {
+                                            // Navigate to EditTrainingPage with the current training data
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    EditTrainingPage(
+                                                  trainingId: training.id,
+                                                  onSave: initInfo,
+                                                  // Pass current training to edit
                                                 ),
                                               ),
+                                            ).then((updatedTraining) {
+                                              // When returning from the edit page, update the training list
+                                              if (updatedTraining != null) {
+                                                setState(() {
+                                                  // Update the training in the list
+                                                  training.exercises =
+                                                      updatedTraining
+                                                          .exercises; // Adjust according to how you handle updated training
+                                                });
+                                              }
+                                            });
+                                          },
+                                          icon: const Icon(Icons.edit),
+                                          color: secondaryColor,
+                                          padding: EdgeInsets
+                                              .zero, // Remove default padding
+                                        ),
+                                      ],
+                                    ),
+                                    iconColor: secondaryColor,
+                                    collapsedIconColor: secondaryColor,
+                                    children: [
+                                      // Check if there are exercises for this training
+                                      if (training.exercises.isEmpty)
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 8.0),
+                                          child: Center(
+                                            child: Text(
+                                              'No exercises available',
+                                              style: TextStyle(
+                                                color: secondaryColor,
+                                              ),
                                             ),
-                                          )
-                                        else
-                                          ListView.builder(
-                                            shrinkWrap: true,
-                                            physics:
-                                                const NeverScrollableScrollPhysics(),
-                                            itemCount:
-                                                training.exercises.length,
-                                            itemBuilder: (context, exIndex) {
-                                              Exercise exercise =
-                                                  training.exercises[exIndex];
+                                          ),
+                                        )
+                                      else
+                                        ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: training.exercises.length,
+                                          itemBuilder: (context, exIndex) {
+                                            Exercise exercise =
+                                                training.exercises[exIndex];
 
-                                              return Column(
-                                                children: [
-                                                  // Exercise ExpansionTile
-                                                  ExpansionTile(
-                                                    title: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        Text(
-                                                          exercise.name,
-                                                          style:
-                                                              const TextStyle(
-                                                            color:
-                                                                secondaryColor,
+                                            return Column(
+                                              children: [
+                                                // Exercise ExpansionTile
+                                                ExpansionTile(
+                                                  title: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        exercise.name,
+                                                        style: const TextStyle(
+                                                          color: secondaryColor,
+                                                        ),
+                                                      ),
+                                                      Row(
+                                                        children: [
+                                                          Checkbox(
+                                                            value: exercise
+                                                                .completed,
+                                                            onChanged:
+                                                                (bool? value) {
+                                                              setState(() {
+                                                                exercise.completed =
+                                                                    value!;
+                                                              });
+                                                            },
+                                                            activeColor:
+                                                                accentColor2,
                                                           ),
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            Checkbox(
-                                                                value: exercise
-                                                                    .completed,
-                                                                onChanged:
-                                                                    (bool?
-                                                                        value) {
-                                                                  setState(() {
-                                                                    exercise.completed =
-                                                                        value!;
-                                                                  });
-                                                                },
-                                                                activeColor:
-                                                                    accentColor2),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    iconColor: secondaryColor,
-                                                    collapsedIconColor:
-                                                        secondaryColor,
-                                                    children: exercise
-                                                            .weights.isEmpty
-                                                        ? [
-                                                            const Text(
-                                                              'No weights available',
-                                                              style: TextStyle(
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  iconColor: secondaryColor,
+                                                  collapsedIconColor:
+                                                      secondaryColor,
+                                                  children: exercise
+                                                          .weights.isEmpty
+                                                      ? [
+                                                          const Text(
+                                                            'No weights available',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  secondaryColor,
+                                                            ),
+                                                          )
+                                                        ]
+                                                      : exercise.weights
+                                                          .map<Widget>(
+                                                              (weightData) {
+                                                          return Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        16.0,
+                                                                    vertical:
+                                                                        4.0),
+                                                            child: Text(
+                                                              'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
+                                                              style:
+                                                                  const TextStyle(
                                                                 color:
                                                                     secondaryColor,
                                                               ),
-                                                            )
-                                                          ]
-                                                        : exercise.weights
-                                                            .map<Widget>(
-                                                                (weightData) {
-                                                            return Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          16.0,
-                                                                      vertical:
-                                                                          4.0),
-                                                              child: Text(
-                                                                'Peso: ${weightData['Peso']} kg, Reps: ${weightData['Rep']}',
-                                                                style:
-                                                                    const TextStyle(
-                                                                  color:
-                                                                      secondaryColor,
-                                                                ),
-                                                              ),
-                                                            );
-                                                          }).toList(),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            );
-                          }
+                            ),
+                          );
                         })
                     : Center(
                         // Center the text "Quim" when the list is empty
@@ -511,8 +500,8 @@ class _MPageState extends State<MPage> {
                           ),
                         ),
                       ),
-              )
-            ]),
+              ],
+            ),
           ),
           floatingActionButton: SpeedDial(
             animatedIcon: AnimatedIcons.menu_close,

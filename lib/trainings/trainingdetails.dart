@@ -22,25 +22,46 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
   bool isLoading = true;
 
   Future<void> fetchTrainingDetails() async {
-    // Fetch training details and update the state
-    List<Map<String, dynamic>> trainingResult = await dbHelper.customQuery(
-        "SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
-    List<Map<String, dynamic>> daysResult = await dbHelper.customQuery(
-        "SELECT Day FROM Tr_Day WHERE CodTr = ${widget.trainingId}");
-    List<Map<String, dynamic>> exercisesResult = await dbHelper.customQuery(
-        "SELECT Exer.Name FROM Exer INNER JOIN Tr_Exer ON Exer.IdExer = Tr_Exer.CodExer WHERE Tr_Exer.CodTr = ${widget.trainingId}");
+    try {
+      // Fetch training details and update the state
+      List<Map<String, dynamic>> trainingResult = await dbHelper.customQuery(
+          "SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
 
-    setState(() {
-      trainingName = trainingResult.isNotEmpty
-          ? trainingResult[0]['Name']
-          : 'Unnamed Training';
-      trainingType = trainingResult.isNotEmpty
-          ? trainingResult[0]['Type'] ?? 'No type specified'
-          : 'No type specified';
-      trainingDays = daysResult.map((day) => day['Day'].toString()).toList();
-      exercises = exercisesResult;
-      isLoading = false;
-    });
+      // Fetching training days (make sure to query for the actual day names)
+      List<Map<String, dynamic>> daysResult =
+          await dbHelper.customQuery("""SELECT d.Name AS Day FROM Day d 
+        INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
+        WHERE td.CodTr = ${widget.trainingId}""");
+
+      // Fetching exercises
+      List<Map<String, dynamic>> exercisesResult =
+          await dbHelper.customQuery("""SELECT e.Name AS ExerciseName
+        FROM Exer e
+        INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
+        WHERE te.CodTr = ${widget.trainingId}""");
+
+      setState(() {
+        trainingName = trainingResult.isNotEmpty
+            ? trainingResult[0]['Name']
+            : 'Unnamed Training';
+        trainingType = trainingResult.isNotEmpty
+            ? trainingResult[0]['Type'] ?? 'No type specified'
+            : 'No type specified';
+        trainingDays = daysResult.map((day) => day['Day'].toString()).toList();
+        exercises = exercisesResult;
+        isLoading = false;
+      });
+    } catch (e) {
+      // Handle any errors that might occur
+      setState(() {
+        isLoading = false;
+        trainingName = 'Error fetching data';
+        trainingType = 'Error';
+        trainingDays = [];
+        exercises = [];
+      });
+      print('Error fetching training details: $e');
+    }
   }
 
   @override
@@ -163,7 +184,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                                     ),
                                   ),
                                   title: Text(
-                                    exercises[index]['Name'],
+                                    exercises[index]['ExerciseName'],
                                     style: const TextStyle(fontSize: 16),
                                   ),
                                 ),

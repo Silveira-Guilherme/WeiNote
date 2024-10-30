@@ -51,36 +51,39 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     }
 
     // Fetch exercises for the training
-    var exercisesResult = await dbHelper.customQuery(
-        "SELECT Exer.IdExer, Exer.Name FROM Exer INNER JOIN Tr_Exer ON Exer.IdExer = Tr_Exer.CodExer WHERE Tr_Exer.CodTr = ${widget.trainingId}");
+    var exercisesResult =
+        await dbHelper.customQuery("SELECT Exer.IdExer, Exer.Name FROM Exer "
+            "JOIN Tr_Exer ON Exer.IdExer = Tr_Exer.CodExer "
+            "WHERE Tr_Exer.CodTr = ${widget.trainingId}");
 
-    // Initialize controllers for exercises and weights
     for (var exercise in exercisesResult) {
       exercises.add({'id': exercise['IdExer'], 'name': exercise['Name']});
       exerciseControllers.add(TextEditingController(text: exercise['Name']));
       List<Map<String, dynamic>> tempSeries = [];
 
-      // Fetch weights and series information for each exercise
-      var seriesResult = await dbHelper.customQuery(
-          "SELECT s.Peso, s.Rep as Repetitions FROM Serie s, Tr_Exer e WHERE s.CodExer=e.CodExer and e.CodExer = ${exercise['IdExer']} AND e.CodTr = ${widget.trainingId}");
+      // Fetch weights and reps for each exercise's series
+      var seriesResult =
+          await dbHelper.customQuery("SELECT s.Peso, s.Rep FROM Serie s "
+              "WHERE s.CodExer = ${exercise['IdExer']}");
 
       for (var series in seriesResult) {
-        tempSeries.add(
-            {'weight': series['Peso'], 'repetitions': series['Repetitions']});
+        tempSeries.add({
+          'weight': series['Peso'],
+          'repetitions': series['Rep'],
+        });
       }
       seriesData.add(tempSeries);
     }
 
-    // Fetch training days
+    // Fetch training days and map them to the weekDays indices
     var daysResult = await dbHelper.customQuery(
-        "SELECT Day FROM Tr_Day WHERE CodTr = ${widget.trainingId}");
+        "SELECT CodDay FROM Tr_Day WHERE CodTr = ${widget.trainingId}");
 
-    // Mark selected days
-    for (int i = 0; i < weekDays.length; i++) {
-      if (daysResult
-          .map((day) => day['Day'].toLowerCase())
-          .contains(weekDays[i].toLowerCase())) {
-        selectedDays[i] = true;
+    // Set the selectedDays based on the retrieved `CodDay` values
+    for (var day in daysResult) {
+      int idDay = day['CodDay'];
+      if (idDay > 0 && idDay <= weekDays.length) {
+        selectedDays[idDay - 1] = true;
       }
     }
 
@@ -116,26 +119,25 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     // Update exercises with IDs
     for (int i = 0; i < exerciseControllers.length; i++) {
       String exerciseName = exerciseControllers[i].text;
-      int exerciseId = exercises[i]['id']; // Retrieve the exercise ID
+      int exerciseId = exercises[i]['id'];
 
       if (exerciseName.isEmpty) {
         _showErrorDialog('Exercise name cannot be empty');
         return;
       }
 
-      // Use the dedicated updateExercise method
+      // Use the updateExercise method
       await dbHelper.updateExercise(exerciseId, exerciseName);
     }
 
-    // Clear and reinsert training days
+    // Update training days by clearing and reinserting CodDay values
     await dbHelper.clearTrainingDays(widget.trainingId);
-
-    /*for (int i = 0; i < selectedDays.length; i++) {
+    for (int i = 0; i < selectedDays.length; i++) {
       if (selectedDays[i]) {
-        String day = weekDays[i];
-        await dbHelper.insertTrainingDay(widget.trainingId, day);
+        int idDay = i + 1; // Convert index to 1-based day ID
+        await dbHelper.insertTrainingDay(widget.trainingId, idDay);
       }
-    }*/
+    }
 
     widget.onSave();
     Navigator.pop(context);
@@ -159,7 +161,6 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     );
   }
 
-  // Function to show edit exercise dialog
   void _showEditExerciseDialog(int index) {
     showDialog(
       context: context,
@@ -179,8 +180,8 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
             TextButton(
               child: const Text('Save'),
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                setState(() {}); // Refresh the UI
+                Navigator.of(context).pop();
+                setState(() {});
               },
             ),
             TextButton(
@@ -249,8 +250,8 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                     },
                     child: Chip(
                       side: BorderSide(
-                        color: primaryColor, // Set your color here
-                        width: 2, // Set the border width here
+                        color: primaryColor,
+                        width: 2,
                       ),
                       label: Text(
                         weekDays[index],
@@ -279,8 +280,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                 itemBuilder: (context, index) {
                   return Card(
                     margin: const EdgeInsets.all(5.0),
-                    color:
-                        accentColor1, // Ensure this color is defined in your main.dart
+                    color: accentColor1,
                     elevation: 5,
                     child: Padding(
                       padding: const EdgeInsets.all(1.0),
@@ -291,8 +291,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                             Text(
                               exercises[index]['name'],
                               style: const TextStyle(
-                                color:
-                                    secondaryColor, // Ensure this color is defined
+                                color: secondaryColor,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -305,20 +304,16 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => EditExercisePage(
-                                      exerciseId: exercises[index][
-                                          'id'], // The ID of the exercise to edit
-                                      onSave: () {
-                                        // Refresh the exercise list or update UI after saving
-                                      },
+                                      exerciseId: exercises[index]['id'],
+                                      onSave: () {},
                                     ),
                                   ),
                                 );
-                                print("hahahahah");
                               },
                             ),
                           ],
                         ),
-                        iconColor: secondaryColor, // Adjust icon color
+                        iconColor: secondaryColor,
                         collapsedIconColor: secondaryColor,
                         children: [
                           Padding(

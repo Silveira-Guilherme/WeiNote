@@ -88,6 +88,7 @@ class _MPageState extends State<MPage> {
       // Process the results and populate the trainings list
       for (var item in trainingData) {
         int trainingId = item['IdTr'];
+
         // If the training is not already in the map, create a new Training object
         if (!trainingMap.containsKey(trainingId)) {
           trainingMap[trainingId] = Training(
@@ -98,22 +99,43 @@ class _MPageState extends State<MPage> {
           );
         }
 
-        // Now create an Exercise object for this item
+        // Check if the exercise exists and has a valid ID
         if (item['IdExer'] != null) {
-          Exercise exercise = Exercise(
-            id: item['IdExer'],
-            name: item['ExerciseName'],
-            order: item['ExerciseOrder'] ?? 0,
-            weights: [
-              {
-                'Peso': item['Peso'],
-                'Rep': item['Rep'],
-              }
-            ],
-          );
+          int exerciseId = item['IdExer'];
+          var training = trainingMap[trainingId]!;
 
-          // Add the exercise to the training
-          trainingMap[trainingId]?.exercises.add(exercise);
+          // Try to find the exercise by id manually
+          Exercise? existingExercise;
+          for (var ex in training.exercises) {
+            if (ex.id == exerciseId) {
+              existingExercise = ex;
+              break;
+            }
+          }
+
+          if (existingExercise != null) {
+            // If the exercise already exists, add the weight and rep data to the weights list
+            existingExercise.weights.add({
+              'Peso': item['Peso'],
+              'Rep': item['Rep'],
+            });
+          } else {
+            // If exercise doesn't exist, create a new one with the initial weight data
+            Exercise newExercise = Exercise(
+              id: exerciseId,
+              name: item['ExerciseName'],
+              order: item['ExerciseOrder'] ?? 0,
+              weights: [
+                {
+                  'Peso': item['Peso'],
+                  'Rep': item['Rep'],
+                }
+              ],
+            );
+
+            // Add the new exercise to the training
+            training.exercises.add(newExercise);
+          }
         }
       }
 

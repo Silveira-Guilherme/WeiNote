@@ -56,13 +56,21 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
     });
   }
 
-  // Submit selected exercises to the Tr_Exer table
   void submitExercises() async {
+    // Fetch the maximum order value for the current training's exercises
+    var lastOrderQuery = await dbHelper.customQuery(
+      "SELECT MAX(ExerOrder) as lastOrder FROM Tr_Exer WHERE CodTr = ${widget.trainingId}",
+    );
+    int lastOrder = lastOrderQuery[0]['lastOrder'] ?? 0;
+
+    // Iterate through each exercise and add those marked as completed
     for (int i = 0; i < exercises.length; i++) {
       if (completed[i]) {
         int exerciseId = exercises[i]['IdExer'];
+        lastOrder += 1; // Increment order for each new exercise
+
         await dbHelper.customQuery(
-          "INSERT INTO Tr_Exer (CodExer, CodTr) VALUES ($exerciseId, ${widget.trainingId})",
+          "INSERT INTO Tr_Exer (CodExer, CodTr, ExerOrder) VALUES ($exerciseId, ${widget.trainingId}, $lastOrder)",
         );
       }
     }
@@ -80,6 +88,13 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
               const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: submitExercises,
+            color: Colors.white,
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -150,26 +165,9 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                     },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: ElevatedButton(
-                    onPressed: submitExercises,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 76, 35, 35),
-                      padding: const EdgeInsets.symmetric(vertical: 14.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      'Submit Selected Exercises',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         onPressed: () {
@@ -180,8 +178,7 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
             ),
           );
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Exercise'),
+        child: const Icon(Icons.add), // Adding the plus icon
       ),
     );
   }

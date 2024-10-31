@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gymdo/exercises/selectexec.dart';
 import 'package:intl/intl.dart';
 import '/../sql.dart';
 
@@ -170,9 +171,13 @@ class _CPageState extends State<CPage> {
           int? trainingId = await submitTraining();
 
           if (trainingId != null) {
-            // Navigate to the ExerciseListPage and pass the trainingId
-            // You can use Navigator to push the next page
-            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ExerciseListPage(
+                        trainingId: trainingId,
+                      )),
+            );
           }
         },
         child: const Icon(Icons.add),

@@ -3,6 +3,7 @@ import 'dart:async'; // For Timer
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/allexercises.dart';
 import 'package:gymdo/exercises/createexec.dart';
+import 'package:gymdo/macro/allmacros.dart';
 import 'package:gymdo/main.dart';
 import 'package:gymdo/trainings/edit.dart';
 import 'package:gymdo/trainings/select.dart';
@@ -517,6 +518,18 @@ class _MPageState extends State<MPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => AllExercisesPage()),
+                  );
+                },
+              ),
+              SpeedDialChild(
+                child: const Icon(Icons.add),
+                label: 'See All Macros',
+                foregroundColor: secondaryColor,
+                backgroundColor: primaryColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AllMacrosPage()),
                   );
                 },
               ),

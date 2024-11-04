@@ -31,35 +31,25 @@ class DatabaseHelper {
 
   Future<void> _createDatabase(Database db, int version) async {
     // Create tables if they don't exist
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS User(IdUser INTEGER PRIMARY KEY, Name TEXT, Init INTEGER)");
+    await db.execute("CREATE TABLE IF NOT EXISTS User(IdUser INTEGER PRIMARY KEY, Name TEXT, Init INTEGER)");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Day(IdDay INTEGER PRIMARY KEY, Name TEXT)");
+    await db.execute("CREATE TABLE IF NOT EXISTS Day(IdDay INTEGER PRIMARY KEY, Name TEXT)");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Tr(IdTr INTEGER PRIMARY KEY, Name TEXT, Type TEXT)");
+    await db.execute("CREATE TABLE IF NOT EXISTS Tr(IdTr INTEGER PRIMARY KEY, Name TEXT, Type TEXT)");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Tr_Day(IdTr_Day INTEGER PRIMARY KEY, CodDay INTEGER, CodTr INTEGER, FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodDay) REFERENCES Day(IdDay))");
+    await db.execute("CREATE TABLE IF NOT EXISTS Tr_Day(IdTr_Day INTEGER PRIMARY KEY, CodDay INTEGER, CodTr INTEGER, FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodDay) REFERENCES Day(IdDay))");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Exer(IdExer INTEGER PRIMARY KEY, Name TEXT)");
+    await db.execute("CREATE TABLE IF NOT EXISTS Exer(IdExer INTEGER PRIMARY KEY, Name TEXT)");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Serie(IdSerie INTEGER PRIMARY KEY, Peso INTEGER, Rep INTEGER, CodExer INTEGER, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer))");
+    await db.execute("CREATE TABLE IF NOT EXISTS Serie(IdSerie INTEGER PRIMARY KEY, Peso INTEGER, Rep INTEGER, CodExer INTEGER, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer))");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Tr_Exer(IdTr_Exer INTEGER PRIMARY KEY, CodExer INTEGER, CodTr INTEGER, CodAlt INTEGER, ExerOrder INT, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodAlt) REFERENCES Exer(IdExer))");
+    await db.execute("CREATE TABLE IF NOT EXISTS Tr_Exer(IdTr_Exer INTEGER PRIMARY KEY, CodExer INTEGER, CodTr INTEGER, CodAlt INTEGER, ExerOrder INT, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodAlt) REFERENCES Exer(IdExer))");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Macro(IdMacro INTEGER PRIMARY KEY, Qtt INTEGER, RSerie INTEGER, RExer INTEGER)");
+    await db.execute("CREATE TABLE IF NOT EXISTS Macro(IdMacro INTEGER PRIMARY KEY, Qtt INTEGER, RSerie INTEGER, RExer INTEGER)");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Exer_Macro(IdExer_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodExer INTEGER, MacroOrder INT, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
+    await db.execute("CREATE TABLE IF NOT EXISTS Exer_Macro(IdExer_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodExer INTEGER, MacroOrder INT, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
 
-    await db.execute(
-        "CREATE TABLE IF NOT EXISTS Tr_Macro(IdTr_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodTr INTEGER, ExerOrder INT, FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
+    await db.execute("CREATE TABLE IF NOT EXISTS Tr_Macro(IdTr_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodTr INTEGER, ExerOrder INT, FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
 
     final List<String> weekdays = [
       'Monday',
@@ -87,10 +77,7 @@ class DatabaseHelper {
 // Insert a new user
   Future<int> insertUser(String name) async {
     Database db = await database;
-    return await db.insert('User', {
-      'Name': name,
-      'Init': 0
-    }); // Insert into User table with 'Init' default value
+    return await db.insert('User', {'Name': name, 'Init': 0}); // Insert into User table with 'Init' default value
   }
 
 // Retrieve all user names
@@ -103,8 +90,7 @@ class DatabaseHelper {
   }
 
 // Execute a custom SQL query
-  Future<List<Map<String, dynamic>>> customQuery(String sqlQuery,
-      [String? string]) async {
+  Future<List<Map<String, dynamic>>> customQuery(String sqlQuery, [String? string]) async {
     Database db = await database;
     return await db.rawQuery(sqlQuery);
   }
@@ -186,8 +172,7 @@ class DatabaseHelper {
     Database db = await database;
     return await db.delete(
       'Serie',
-      where:
-          'IdSerie = ?', // Assuming 'IdSerie' is the primary key of the series
+      where: 'IdSerie = ?', // Assuming 'IdSerie' is the primary key of the series
       whereArgs: [seriesId],
     );
   }
@@ -207,8 +192,7 @@ class DatabaseHelper {
   }
 
 // Retrieve series based on exercise ID
-  Future<List<Map<String, dynamic>>> getSeriesByExerciseId(
-      int exerciseId) async {
+  Future<List<Map<String, dynamic>>> getSeriesByExerciseId(int exerciseId) async {
     Database db = await database;
 
     return await db.query(
@@ -239,11 +223,9 @@ class DatabaseHelper {
   }
 
   // Insert an exercise with unique order for the training
-  Future<int> insertTrainingExercise(
-      int exerciseId, int trainingId, int order) async {
+  Future<int> insertTrainingExercise(int exerciseId, int trainingId, int order) async {
     if (!await isOrderUniqueForTraining(trainingId, order)) {
-      throw Exception(
-          "Order $order already exists for training $trainingId in either Tr_Exer or Tr_Macro.");
+      throw Exception("Order $order already exists for training $trainingId in either Tr_Exer or Tr_Macro.");
     }
 
     Database db = await database;
@@ -258,11 +240,9 @@ class DatabaseHelper {
   }
 
 // Insert a macro with unique order for the training
-  Future<int> insertTrainingMacro(
-      int macroId, int trainingId, int order) async {
+  Future<int> insertTrainingMacro(int macroId, int trainingId, int order) async {
     if (!await isOrderUniqueForTraining(trainingId, order)) {
-      throw Exception(
-          "Order $order already exists for training $trainingId in either Tr_Exer or Tr_Macro.");
+      throw Exception("Order $order already exists for training $trainingId in either Tr_Exer or Tr_Macro.");
     }
 
     Database db = await database;
@@ -274,5 +254,25 @@ class DatabaseHelper {
         'Order': order,
       },
     );
+  }
+
+  // Function to insert a new macro into the Macro table
+  Future<int> addMacro(int quantity, int restSeries, int restExercise) async {
+    final db = await database;
+    return await db.insert('Macro', {
+      'Qtt': quantity,
+      'RSerie': restSeries,
+      'RExer': restExercise,
+    });
+  }
+
+  // Function to insert a new exercise-macro association into Exer_Macro
+  Future<int> addExerMacro(int macroId, int exerId, int order) async {
+    final db = await database;
+    return await db.insert('Exer_Macro', {
+      'CodMacro': macroId,
+      'CodExer': exerId,
+      'MacroOrder': order,
+    });
   }
 }

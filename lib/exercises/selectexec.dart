@@ -5,8 +5,7 @@ import '/../sql.dart';
 class ExerciseListPage extends StatefulWidget {
   final int trainingId;
 
-  const ExerciseListPage({Key? key, required this.trainingId})
-      : super(key: key);
+  const ExerciseListPage({Key? key, required this.trainingId}) : super(key: key);
 
   @override
   _ExerciseListPageState createState() => _ExerciseListPageState();
@@ -14,7 +13,7 @@ class ExerciseListPage extends StatefulWidget {
 
 class _ExerciseListPageState extends State<ExerciseListPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
-  List<Map<String, dynamic>> exercises = [];
+  List<Map<String, dynamic>> items = [];
   List<bool> expandedList = [];
   List<bool> completed = [];
   bool isLoading = false;
@@ -22,56 +21,83 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
   @override
   void initState() {
     super.initState();
-    fetchExercises();
+    fetchItems();
   }
 
-  // Fetch exercises from the database
-  Future<void> fetchExercises() async {
+  // Fetch exercises and macros from the database
+  Future<void> fetchItems() async {
     setState(() {
       isLoading = true;
     });
 
-    List<Map<String, dynamic>> queryResult =
-        await dbHelper.customQuery("SELECT * FROM Exer");
+    // Fetch exercises
+    List<Map<String, dynamic>> exercises = await dbHelper.customQuery("""
+      SELECT IdExer AS id, Name, 'exercise' AS type FROM Exer
+    """);
+
+    // Fetch macros with quantity and associated exercise names
+    List<Map<String, dynamic>> macros = await dbHelper.customQuery("""
+      SELECT Macro.IdMacro AS id, Macro.Qtt AS quantity, 'macro' AS type, GROUP_CONCAT(Exer.Name, ', ') AS exerciseNames
+      FROM Macro
+      JOIN Exer_Macro ON Macro.IdMacro = Exer_Macro.CodMacro
+      JOIN Exer ON Exer_Macro.CodExer = Exer.IdExer
+      GROUP BY Macro.IdMacro
+    """);
+
+    // Combine exercises and macros
+    List<Map<String, dynamic>> queryResult = [...exercises, ...macros];
 
     setState(() {
-      exercises = queryResult;
-      expandedList = List.generate(exercises.length, (index) => false);
-      completed = List.generate(exercises.length, (index) => false);
+      items = queryResult;
+      expandedList = List.generate(items.length, (index) => false);
+      completed = List.generate(items.length, (index) => false);
       isLoading = false;
     });
   }
 
-  // Change expanded state for exercise details
+  // Toggle expanded state for item details
   void changeExpanded(bool isExpanded, int index) {
     setState(() {
       expandedList[index] = isExpanded;
     });
   }
 
-  // Change the completed state of the exercise
+  // Toggle completed state
   void changeValue(bool isCompleted, int index) {
     setState(() {
       completed[index] = isCompleted;
     });
   }
 
+  // Save selected exercises and macros to the training
   void submitExercises() async {
-    // Fetch the maximum order value for the current training's exercises
-    var lastOrderQuery = await dbHelper.customQuery(
-      "SELECT MAX(ExerOrder) as lastOrder FROM Tr_Exer WHERE CodTr = ${widget.trainingId}",
-    );
+    var lastOrderQuery = await dbHelper.customQuery("""
+      SELECT MAX(ExerOrder) as lastOrder FROM (
+        SELECT ExerOrder FROM Tr_Exer WHERE CodTr = ${widget.trainingId}
+        UNION
+        SELECT ExerOrder FROM Tr_Macro WHERE CodTr = ${widget.trainingId}
+      )
+    """);
     int lastOrder = lastOrderQuery[0]['lastOrder'] ?? 0;
 
-    // Iterate through each exercise and add those marked as completed
-    for (int i = 0; i < exercises.length; i++) {
+    // Save each selected exercise and macro
+    for (int i = 0; i < items.length; i++) {
       if (completed[i]) {
-        int exerciseId = exercises[i]['IdExer'];
-        lastOrder += 1; // Increment order for each new exercise
+        final item = items[i];
+        final itemId = item['id'];
+        final itemType = item['type'];
 
-        await dbHelper.customQuery(
-          "INSERT INTO Tr_Exer (CodExer, CodTr, ExerOrder) VALUES ($exerciseId, ${widget.trainingId}, $lastOrder)",
-        );
+        lastOrder += 1;
+
+        if (itemType == 'exercise') {
+          await dbHelper.customQuery(
+            "INSERT INTO Tr_Exer (CodExer, CodTr, ExerOrder) VALUES ($itemId, ${widget.trainingId}, $lastOrder)",
+          );
+        } else if (itemType == 'macro') {
+          await dbHelper.customQuery(
+            "INSERT INTO Tr_Macro (CodMacro, CodTr, ExerOrder) VALUES ($itemId, ${widget.trainingId}, $lastOrder)",
+          );
+        }
       }
     }
     Navigator.pop(context);
@@ -82,10 +108,9 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(
-          'Select Exercises',
-          style:
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: const Text(
+          'Select Exercises & Macros',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
@@ -103,9 +128,11 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                 Expanded(
                   child: ListView.separated(
                     separatorBuilder: (context, index) => const Divider(),
-                    itemCount: exercises.length,
+                    itemCount: items.length,
                     itemBuilder: (context, index) {
-                      var exercise = exercises[index];
+                      var item = items[index];
+                      bool isMacro = item['type'] == 'macro';
+
                       return GestureDetector(
                         onTap: () {
                           changeValue(!completed[index], index);
@@ -115,12 +142,9 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          color: completed[index]
-                              ? const Color.fromARGB(255, 220, 237, 200)
-                              : Colors.white,
+                          color: completed[index] ? const Color.fromARGB(255, 220, 237, 200) : Colors.white,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 8.0, horizontal: 12.0),
+                            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
                             child: Column(
                               children: [
                                 ListTile(
@@ -128,15 +152,12 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                                     backgroundColor: Colors.black,
                                     child: Text(
                                       (index + 1).toString(),
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                   ),
                                   title: Text(
-                                    exercise['Name'] ?? 'Exercise',
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w500),
+                                    isMacro ? 'Macro: ${item['quantity']}x - ${item['exerciseNames']}' : item['Name'] ?? 'Exercise',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: isMacro ? Colors.blueAccent : Colors.black),
                                   ),
                                   trailing: Checkbox(
                                     value: completed[index],
@@ -148,13 +169,12 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                                     changeExpanded(!expandedList[index], index);
                                   },
                                 ),
-                                if (expandedList[index])
+                                if (expandedList[index] && !isMacro)
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),
                                     child: const Text(
                                       'Additional details about the exercise',
-                                      style: TextStyle(
-                                          fontSize: 14, color: Colors.grey),
+                                      style: TextStyle(fontSize: 14, color: Colors.grey),
                                     ),
                                   ),
                               ],
@@ -178,7 +198,7 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
             ),
           );
         },
-        child: const Icon(Icons.add), // Adding the plus icon
+        child: const Icon(Icons.add),
       ),
     );
   }

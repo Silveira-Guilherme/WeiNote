@@ -100,10 +100,8 @@ class _EditExercisePageState extends State<EditExercisePage> {
     await dbHelper.updateExercise(widget.exerciseId, exerciseName);
 
     // Fetch existing series from the database to identify removed items
-    final existingSeries =
-        await dbHelper.getSeriesByExerciseId(widget.exerciseId);
-    final existingSeriesIds =
-        existingSeries.map((series) => series['IdSerie']).toList();
+    final existingSeries = await dbHelper.getSeriesByExerciseId(widget.exerciseId);
+    final existingSeriesIds = existingSeries.map((series) => series['IdSerie']).toList();
 
     // Track the series that were updated or inserted
     List<int> processedSeriesIds = [];
@@ -123,8 +121,7 @@ class _EditExercisePageState extends State<EditExercisePage> {
 
       if (controller['id'] != null) {
         // Existing series: Update it
-        await dbHelper.updateSeries(
-            int.parse(controller['id'].toString()), weight, reps);
+        await dbHelper.updateSeries(int.parse(controller['id'].toString()), weight, reps);
         processedSeriesIds.add(int.parse(controller['id'].toString()));
       } else {
         // New series: Insert it
@@ -148,9 +145,10 @@ class _EditExercisePageState extends State<EditExercisePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           'Edit Exercise',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0, color: Colors.white),
         ),
         actions: [
           IconButton(
@@ -182,18 +180,15 @@ class _EditExercisePageState extends State<EditExercisePage> {
                           Expanded(
                             child: TextField(
                               controller: seriesControllers[index]['weight'],
-                              decoration: const InputDecoration(
-                                  labelText: 'Weight (kg)'),
-                              keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true),
+                              decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                              keyboardType: TextInputType.numberWithOptions(decimal: true),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: TextField(
                               controller: seriesControllers[index]['reps'],
-                              decoration: const InputDecoration(
-                                  labelText: 'Repetitions'),
+                              decoration: const InputDecoration(labelText: 'Repetitions'),
                               keyboardType: TextInputType.number,
                             ),
                           ),

@@ -11,8 +11,7 @@ class Exercise {
     required this.name,
     this.completed = false,
     this.isExpanded = false,
-    this.order =
-        0, // Default to 0, but should be assigned based on the DB order
+    this.order = 0, // Default to 0, but should be assigned based on the DB order
     List<Map<String, dynamic>>? weights,
   }) : weights = weights ?? []; // Ensure weights are initialized to a list
 }
@@ -43,14 +42,18 @@ class Training {
 
 // New Macro class to handle macro-level ordering and information
 class Macro {
+  int id;
   final int order; // Order of the macro within the training
   String name;
   List<Exercise> exercises; // Exercises under this macro
-
+  bool completed;
+  bool isExpanded;
   Macro({
+    required this.id,
     required this.order,
     required this.name,
+    this.completed = false,
+    this.isExpanded = false,
     List<Exercise>? exercises,
-  }) : exercises =
-            exercises ?? []; // Initialize exercises to an empty list if null
+  }) : exercises = exercises ?? []; // Initialize exercises to an empty list if null
 }

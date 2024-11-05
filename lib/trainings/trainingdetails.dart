@@ -18,47 +18,57 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
   String trainingName = '';
   String trainingType = ''; // Store training type
   List<String> trainingDays = [];
-  List<Map<String, dynamic>> exercises = [];
+  List<Map<String, dynamic>> items = [];
   bool isLoading = true;
 
   Future<void> fetchTrainingDetails() async {
     try {
-      // Fetch training details and update the state
-      List<Map<String, dynamic>> trainingResult = await dbHelper.customQuery(
-          "SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
+      // Fetch training details
+      List<Map<String, dynamic>> trainingResult = await dbHelper.customQuery("SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
 
-      // Fetching training days (make sure to query for the actual day names)
-      List<Map<String, dynamic>> daysResult =
-          await dbHelper.customQuery("""SELECT d.Name AS Day FROM Day d 
+      // Fetching training days
+      List<Map<String, dynamic>> daysResult = await dbHelper.customQuery("""
+        SELECT d.Name AS Day FROM Day d 
         INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
-        WHERE td.CodTr = ${widget.trainingId}""");
+        WHERE td.CodTr = ${widget.trainingId}
+      """);
 
       // Fetching exercises
-      List<Map<String, dynamic>> exercisesResult =
-          await dbHelper.customQuery("""SELECT e.Name AS ExerciseName
+      List<Map<String, dynamic>> exercisesResult = await dbHelper.customQuery("""
+        SELECT e.Name AS itemName, 'exercise' AS itemType
         FROM Exer e
         INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
-        WHERE te.CodTr = ${widget.trainingId}""");
+        WHERE te.CodTr = ${widget.trainingId}
+      """);
+
+      // Fetching macros with quantity and associated exercise names
+      List<Map<String, dynamic>> macrosResult = await dbHelper.customQuery("""
+        SELECT m.Qtt AS quantity, GROUP_CONCAT(e.Name, ', ') AS exerciseNames, 'macro' AS itemType
+        FROM Macro m
+        JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
+        JOIN Exer e ON em.CodExer = e.IdExer
+        INNER JOIN Tr_Macro tm ON tm.CodMacro = m.IdMacro
+        WHERE tm.CodTr = ${widget.trainingId}
+        GROUP BY m.IdMacro
+      """);
+
+      // Combine exercises and macros into a single list
+      List<Map<String, dynamic>> combinedItems = [...exercisesResult, ...macrosResult];
 
       setState(() {
-        trainingName = trainingResult.isNotEmpty
-            ? trainingResult[0]['Name']
-            : 'Unnamed Training';
-        trainingType = trainingResult.isNotEmpty
-            ? trainingResult[0]['Type'] ?? 'No type specified'
-            : 'No type specified';
+        trainingName = trainingResult.isNotEmpty ? trainingResult[0]['Name'] : 'Unnamed Training';
+        trainingType = trainingResult.isNotEmpty ? trainingResult[0]['Type'] ?? 'No type specified' : 'No type specified';
         trainingDays = daysResult.map((day) => day['Day'].toString()).toList();
-        exercises = exercisesResult;
+        items = combinedItems;
         isLoading = false;
       });
     } catch (e) {
-      // Handle any errors that might occur
       setState(() {
         isLoading = false;
         trainingName = 'Error fetching data';
         trainingType = 'Error';
         trainingDays = [];
-        exercises = [];
+        items = [];
       });
       print('Error fetching training details: $e');
     }
@@ -74,18 +84,15 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize:
-            const Size.fromHeight(70.0), // Adjust the height of the AppBar
+        preferredSize: const Size.fromHeight(70.0),
         child: AppBar(
           backgroundColor: primaryColor,
-          iconTheme: const IconThemeData(
-            color: secondaryColor, // Change the back button color to white
-          ),
+          iconTheme: const IconThemeData(color: secondaryColor),
           title: const Text(
             'Training Details',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 24.0, // Adjust the font size
+              fontSize: 24.0,
               color: secondaryColor,
             ),
           ),
@@ -100,7 +107,6 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Training name section
                     Text(
                       trainingName,
                       style: const TextStyle(
@@ -119,8 +125,6 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Training days section with Chips
                     const Text(
                       'Training Days:',
                       style: TextStyle(
@@ -139,8 +143,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                                       style: TextStyle(color: secondaryColor),
                                     ),
                                     backgroundColor: primaryColor,
-                                    labelStyle: const TextStyle(
-                                        fontWeight: FontWeight.w500),
+                                    labelStyle: const TextStyle(fontWeight: FontWeight.w500),
                                   ))
                               .toList()
                           : [
@@ -151,25 +154,25 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                             ],
                     ),
                     const SizedBox(height: 20),
-
-                    // Exercises section
                     const Text(
-                      'Exercises:',
+                      'Exercises & Macros:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    exercises.isNotEmpty
+                    items.isNotEmpty
                         ? ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: exercises.length,
+                            itemCount: items.length,
                             itemBuilder: (context, index) {
+                              var item = items[index];
+                              bool isMacro = item['itemType'] == 'macro';
+
                               return Card(
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 6.0, horizontal: 0),
+                                margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
                                 elevation: 2,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -179,12 +182,11 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                                     backgroundColor: Colors.black87,
                                     child: Text(
                                       '${index + 1}',
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                   ),
                                   title: Text(
-                                    exercises[index]['ExerciseName'],
+                                    isMacro ? '${item['quantity']}x - ${item['exerciseNames']}' : item['itemName'],
                                     style: const TextStyle(fontSize: 16),
                                   ),
                                 ),
@@ -192,15 +194,13 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                             },
                           )
                         : const Text(
-                            'No exercises associated with this training.',
+                            'No exercises or macros associated with this training.',
                             style: TextStyle(color: Colors.black54),
                           ),
                   ],
                 ),
               ),
             ),
-
-      // Floating Action Button with Speed Dial
       floatingActionButton: SpeedDial(
         animatedIcon: AnimatedIcons.menu_close,
         backgroundColor: primaryColor,

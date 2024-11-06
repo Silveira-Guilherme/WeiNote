@@ -20,6 +20,7 @@ class Training {
   final int id; // Unique identifier for the training
   String name;
   String? type;
+  bool isExpanded;
   List<Exercise> exercises;
   List<String> days; // List of days associated with the training
   List<Macro> macros; // List of macros associated with the training
@@ -27,6 +28,7 @@ class Training {
   Training({
     required this.id,
     required this.name,
+    this.isExpanded = false,
     this.type,
     List<Exercise>? exercises,
     List<String>? days,

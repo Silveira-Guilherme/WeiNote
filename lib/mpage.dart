@@ -47,53 +47,64 @@ class _MPageState extends State<MPage> {
     try {
       // Fetch training data
       List<dynamic> trainingData = await dbHelper.customQuery("""
-      SELECT 
-        t.IdTr, 
-        t.Name AS TrainingName, 
-        t.Type AS TrainingType
-      FROM 
-        Tr t
+    SELECT 
+      t.IdTr, 
+      t.Name AS TrainingName, 
+      t.Type AS TrainingType
+    FROM 
+      Tr t
     """);
 
       // Fetch exercise data related to trainings
       List<dynamic> exerciseData = await dbHelper.customQuery("""
-      SELECT 
-        te.CodTr, 
-        e.IdExer, 
-        e.Name AS ExerciseName, 
-        te.ExerOrder,
-        s.Peso, 
-        s.Rep
-      FROM 
-        Tr_Exer te
-      LEFT JOIN 
-        Exer e ON te.CodExer = e.IdExer 
-      LEFT JOIN 
-        Serie s ON e.IdExer = s.CodExer  
-      WHERE 
-        te.CodTr IN (SELECT IdTr FROM Tr)
-      ORDER BY 
-        te.CodTr, te.ExerOrder
+    SELECT 
+      te.CodTr, 
+      e.IdExer, 
+      e.Name AS ExerciseName, 
+      te.ExerOrder,
+      s.Peso, 
+      s.Rep
+    FROM 
+      Tr_Exer te
+    LEFT JOIN 
+      Exer e ON te.CodExer = e.IdExer 
+    LEFT JOIN 
+      Serie s ON e.IdExer = s.CodExer  
+    WHERE 
+      te.CodTr IN (SELECT IdTr FROM Tr)
+    ORDER BY 
+      te.CodTr, te.ExerOrder
     """);
 
       // Fetch macro data related to trainings
       List<dynamic> macroData = await dbHelper.customQuery("""
-      SELECT 
-      m.idmacro as MacroId,
-        tm.CodTr, 
-        m.IdMacro, 
-        mt.MacroOrder, 
-        m.Qtt AS MacroQtt
-      FROM 
-        Tr_Macro tm
-      LEFT JOIN 
-        Macro m ON tm.CodMacro = m.IdMacro
-      LEFT JOIN 
-        Exer_Macro mt ON mt.CodMacro = m.IdMacro
-      WHERE 
-        tm.CodTr IN (SELECT IdTr FROM Tr)
-      ORDER BY 
-        tm.CodTr, mt.MacroOrder
+    SELECT 
+      m.idmacro AS MacroId,
+      tm.CodTr, 
+      m.IdMacro, 
+      mt.MacroOrder, 
+      m.Qtt AS MacroQtt,
+      e.IdExer, 
+      e.Name AS ExerciseName, 
+      te.ExerOrder,
+      s.Peso, 
+      s.Rep
+    FROM 
+      Tr_Macro tm
+    LEFT JOIN 
+      Macro m ON tm.CodMacro = m.IdMacro
+    LEFT JOIN 
+      Exer_Macro mt ON mt.CodMacro = m.IdMacro
+    LEFT JOIN 
+      Exer e ON mt.CodExer = e.IdExer
+    LEFT JOIN 
+      Tr_Exer te ON te.CodExer = e.IdExer AND te.CodTr = tm.CodTr
+    LEFT JOIN 
+      Serie s ON e.IdExer = s.CodExer
+    WHERE 
+      tm.CodTr IN (SELECT IdTr FROM Tr)
+    ORDER BY 
+      tm.CodTr, mt.MacroOrder, te.ExerOrder
     """);
 
       // Initialize training map
@@ -118,6 +129,7 @@ class _MPageState extends State<MPage> {
 
         if (trainingMap.containsKey(trainingId) && exerciseId != null) {
           Training training = trainingMap[trainingId]!;
+
           // Find or create exercise entry
           Exercise exercise = training.exercises.firstWhere(
             (ex) => ex.id == exerciseId,
@@ -140,22 +152,22 @@ class _MPageState extends State<MPage> {
         }
       }
 
-      // Populate macro data
       for (var item in macroData) {
-        int macroid = item['MacroId'];
         int trainingId = item['CodTr'];
+        int macroId = item['MacroId'];
         int macroOrder = item['MacroOrder'] ?? 0;
         int macroQtt = item['MacroQtt'] ?? 0;
 
         if (trainingMap.containsKey(trainingId) && macroQtt > 0) {
           Training training = trainingMap[trainingId]!;
 
-          // Retrieve or create Macro
+          // Check if the macro already exists in the training's macros list
           Macro? macro = training.macros.firstWhere(
-            (m) => m.order == macroOrder,
+            (m) => m.id == macroId,
             orElse: () {
+              // If the macro doesn't exist, create and add it to the training's macros list
               Macro newMacro = Macro(
-                id: macroid,
+                id: macroId,
                 order: macroOrder,
                 name: 'Macro Qtt: $macroQtt', // Display Qtt as Macro's name
                 exercises: [],
@@ -165,11 +177,11 @@ class _MPageState extends State<MPage> {
             },
           );
 
-          // Add exercise to the macro if it exists
+          // Now add the exercise to the existing macro (or newly created one)
           if (item['IdExer'] != null) {
             int exerciseId = item['IdExer'];
 
-            // Check if exercise is already part of the macro
+            // Check if exercise is already part of the macro to avoid duplicates
             Exercise macroExercise = macro.exercises.firstWhere(
               (ex) => ex.id == exerciseId,
               orElse: () {
@@ -184,14 +196,13 @@ class _MPageState extends State<MPage> {
               },
             );
 
-            // Add weights to macro exercise
+            // Add weights to the exercise
             if (item['Peso'] != null && item['Rep'] != null) {
               macroExercise.weights.add({'Peso': item['Peso'], 'Rep': item['Rep']});
             }
           }
         }
       }
-
       // Assign the final list of trainings
       trainings = trainingMap.values.toList();
     } catch (error) {
@@ -380,7 +391,7 @@ class _MPageState extends State<MPage> {
                           Training training = trainings[index];
                           List<Widget> trainingWidgets = [];
 
-                          // Create a combined list that merges exercises and macros by their order
+                          // Create a single list to store both exercises and macros by order
                           List<dynamic> combinedList = [];
 
                           // Add exercises to the combined list
@@ -393,19 +404,19 @@ class _MPageState extends State<MPage> {
                             combinedList.add({'type': 'macro', 'item': macro});
                           }
 
-                          // Sort combinedList by order (handle both exercises and macros)
+                          // Sort the combined list by the 'order' field
                           combinedList.sort((a, b) {
-                            int orderA = a['type'] == 'exercise' ? a['item'].order : a['item'].order; // Use order directly
-                            int orderB = b['type'] == 'exercise' ? b['item'].order : b['item'].order; // Use order directly
-                            return orderA.compareTo(orderB);
+                            return a['item'].order.compareTo(b['item'].order);
                           });
 
-                          // Build UI based on the combined list
+                          // Build the UI based on the combined list
                           for (var item in combinedList) {
                             if (item['type'] == 'exercise') {
                               Exercise exercise = item['item'];
                               trainingWidgets.add(
                                 ExpansionTile(
+                                  iconColor: secondaryColor,
+                                  collapsedIconColor: secondaryColor,
                                   title: Row(
                                     children: [
                                       Expanded(
@@ -416,6 +427,7 @@ class _MPageState extends State<MPage> {
                                       ),
                                       Checkbox(
                                         value: exercise.completed,
+                                        activeColor: accentColor2,
                                         onChanged: (bool? value) {
                                           setState(() {
                                             exercise.completed = value!;
@@ -436,18 +448,25 @@ class _MPageState extends State<MPage> {
                               );
                             } else if (item['type'] == 'macro') {
                               Macro macro = item['item'];
+
+                              // Create a string with the names of the exercises separated by " - "
+                              String exerciseNames = macro.exercises.map((exercise) => exercise.name).join(' - ');
+
                               trainingWidgets.add(
                                 ExpansionTile(
+                                  iconColor: secondaryColor,
+                                  collapsedIconColor: secondaryColor,
                                   title: Row(
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Macro ID: ${macro.order}', // Display macro ID instead of quantity
+                                          'Macro: ${exerciseNames}', // Display exercise names separated by " - "
                                           style: const TextStyle(color: secondaryColor),
                                         ),
                                       ),
                                       Checkbox(
                                         value: macro.completed,
+                                        activeColor: accentColor2,
                                         onChanged: (bool? value) {
                                           setState(() {
                                             macro.completed = value!;
@@ -457,33 +476,19 @@ class _MPageState extends State<MPage> {
                                     ],
                                   ),
                                   children: macro.exercises.map<Widget>((exercise) {
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        ListTile(
+                                    return ExpansionTile(
+                                      title: Text(
+                                        exercise.name,
+                                        style: const TextStyle(color: secondaryColor),
+                                      ),
+                                      children: exercise.weights.map<Widget>((weight) {
+                                        return ListTile(
                                           title: Text(
-                                            exercise.name,
+                                            'Peso: ${weight['Peso']} kg, Reps: ${weight['Rep']}',
                                             style: const TextStyle(color: secondaryColor),
                                           ),
-                                          trailing: Checkbox(
-                                            value: exercise.completed,
-                                            onChanged: (bool? value) {
-                                              setState(() {
-                                                exercise.completed = value!;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        // Displaying weights for each exercise within the macro
-                                        ...exercise.weights.map<Widget>((weight) {
-                                          return ListTile(
-                                            title: Text(
-                                              'Peso: ${weight['Peso']} kg, Reps: ${weight['Rep']}',
-                                              style: const TextStyle(color: secondaryColor),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ],
+                                        );
+                                      }).toList(),
                                     );
                                   }).toList(),
                                 ),
@@ -491,6 +496,7 @@ class _MPageState extends State<MPage> {
                             }
                           }
 
+                          // Add the training widget with ExpansionTile
                           return Card(
                             margin: const EdgeInsets.all(10),
                             color: accentColor1,
@@ -499,11 +505,48 @@ class _MPageState extends State<MPage> {
                               padding: const EdgeInsets.all(8.0),
                               child: Column(
                                 children: [
-                                  Text(
-                                    training.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: secondaryColor, fontSize: 20),
+                                  ExpansionTile(
+                                    iconColor: secondaryColor,
+                                    collapsedIconColor: secondaryColor,
+                                    title: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between the title and the button
+                                      children: [
+                                        Text(
+                                          training.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: secondaryColor,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, color: secondaryColor),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) => EditTrainingPage(
+                                                        trainingId: training.id,
+                                                        onSave: initInfo,
+                                                      )),
+                                            ); // Placeholder function to edit the training
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    // Use the `expanded` property of the training to control the state
+                                    onExpansionChanged: (bool expanded) {
+                                      setState(() {
+                                        training.isExpanded = expanded;
+                                      });
+                                    },
+                                    // Show the widgets inside the training only if expanded
+                                    children: training.isExpanded
+                                        ? [
+                                            ...trainingWidgets,
+                                          ]
+                                        : [],
                                   ),
-                                  ...trainingWidgets,
                                 ],
                               ),
                             ),

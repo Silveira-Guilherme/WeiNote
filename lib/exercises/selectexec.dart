@@ -17,6 +17,7 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
   List<bool> expandedList = [];
   List<bool> completed = [];
   bool isLoading = false;
+  Set<int> alreadyAddedItems = {}; // To store already added exercise or macro ids
 
   @override
   void initState() {
@@ -24,7 +25,7 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
     fetchItems();
   }
 
-  // Fetch exercises and macros from the database
+  // Fetch exercises, macros, and already added items from the database
   Future<void> fetchItems() async {
     setState(() {
       isLoading = true;
@@ -44,13 +45,28 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
       GROUP BY Macro.IdMacro
     """);
 
-    // Combine exercises and macros
+    // Fetch exercises and macros already linked to this training
+    List<Map<String, dynamic>> alreadyAddedExercises = await dbHelper.customQuery("""
+      SELECT CodExer AS id FROM Tr_Exer WHERE CodTr = ${widget.trainingId}
+    """);
+
+    List<Map<String, dynamic>> alreadyAddedMacros = await dbHelper.customQuery("""
+      SELECT CodMacro AS id FROM Tr_Macro WHERE CodTr = ${widget.trainingId}
+    """);
+
+    // Combine exercises and macros into one list
     List<Map<String, dynamic>> queryResult = [...exercises, ...macros];
+
+    // Add already added items (both exercises and macros) to a set for quick lookup
+    alreadyAddedItems = {
+      ...alreadyAddedExercises.map((e) => e['id']),
+      ...alreadyAddedMacros.map((e) => e['id']),
+    };
 
     setState(() {
       items = queryResult;
       expandedList = List.generate(items.length, (index) => false);
-      completed = List.generate(items.length, (index) => false);
+      completed = List.generate(items.length, (index) => false); // Initially, no item is completed
       isLoading = false;
     });
   }
@@ -71,13 +87,14 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
 
   // Save selected exercises and macros to the training
   void submitExercises() async {
+    // Get the current maximum order (order starts from 1)
     var lastOrderQuery = await dbHelper.customQuery("""
-      SELECT MAX(ExerOrder) as lastOrder FROM (
-        SELECT ExerOrder FROM Tr_Exer WHERE CodTr = ${widget.trainingId}
-        UNION
-        SELECT ExerOrder FROM Tr_Macro WHERE CodTr = ${widget.trainingId}
-      )
-    """);
+    SELECT MAX(ExerOrder) as lastOrder FROM (
+      SELECT ExerOrder FROM Tr_Exer WHERE CodTr = ${widget.trainingId}
+      UNION
+      SELECT ExerOrder FROM Tr_Macro WHERE CodTr = ${widget.trainingId}
+    )
+  """);
     int lastOrder = lastOrderQuery[0]['lastOrder'] ?? 0;
 
     // Save each selected exercise and macro
@@ -87,19 +104,23 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
         final itemId = item['id'];
         final itemType = item['type'];
 
+        // Increment the order for each item
         lastOrder += 1;
 
         if (itemType == 'exercise') {
+          // Save the exercise with its order
           await dbHelper.customQuery(
             "INSERT INTO Tr_Exer (CodExer, CodTr, ExerOrder) VALUES ($itemId, ${widget.trainingId}, $lastOrder)",
           );
         } else if (itemType == 'macro') {
+          // Save the macro with its order
           await dbHelper.customQuery(
             "INSERT INTO Tr_Macro (CodMacro, CodTr, ExerOrder) VALUES ($itemId, ${widget.trainingId}, $lastOrder)",
           );
         }
       }
     }
+
     Navigator.pop(context);
   }
 
@@ -132,17 +153,24 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                     itemBuilder: (context, index) {
                       var item = items[index];
                       bool isMacro = item['type'] == 'macro';
+                      bool isAlreadyAdded = alreadyAddedItems.contains(item['id']); // Check if the item is already added
 
                       return GestureDetector(
-                        onTap: () {
-                          changeValue(!completed[index], index);
-                        },
+                        onTap: isAlreadyAdded
+                            ? null // Disable tap if item is already added
+                            : () {
+                                changeValue(!completed[index], index);
+                              },
                         child: Card(
                           elevation: 3,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          color: completed[index] ? const Color.fromARGB(255, 220, 237, 200) : Colors.white,
+                          color: isAlreadyAdded
+                              ? Colors.grey.shade300 // Color for already added items
+                              : completed[index]
+                                  ? const Color.fromARGB(255, 220, 237, 200)
+                                  : Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
                             child: Column(
@@ -157,17 +185,25 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                                   ),
                                   title: Text(
                                     isMacro ? 'Macro: ${item['quantity']}x - ${item['exerciseNames']}' : item['Name'] ?? 'Exercise',
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: isMacro ? Colors.blueAccent : Colors.black),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: isMacro ? Colors.blueAccent : Colors.black,
+                                    ),
                                   ),
                                   trailing: Checkbox(
-                                    value: completed[index],
-                                    onChanged: (value) {
-                                      changeValue(value!, index);
-                                    },
+                                    value: isAlreadyAdded ? true : completed[index], // Automatically checked if already added
+                                    onChanged: isAlreadyAdded
+                                        ? null // Disable the checkbox if already added
+                                        : (value) {
+                                            changeValue(value!, index);
+                                          },
                                   ),
-                                  onTap: () {
-                                    changeExpanded(!expandedList[index], index);
-                                  },
+                                  onTap: isAlreadyAdded
+                                      ? null // Disable expansion if already added
+                                      : () {
+                                          changeExpanded(!expandedList[index], index);
+                                        },
                                 ),
                                 if (expandedList[index] && !isMacro)
                                   Padding(

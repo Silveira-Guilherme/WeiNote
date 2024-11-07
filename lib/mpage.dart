@@ -509,15 +509,29 @@ class _MPageState extends State<MPage> {
                                     iconColor: secondaryColor,
                                     collapsedIconColor: secondaryColor,
                                     title: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between the title and the button
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          training.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: secondaryColor,
-                                            fontSize: 20,
-                                          ),
+                                        // Wrap the title and subtitle in a Column to stack them vertically
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              training.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: secondaryColor,
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4), // Small space between title and subtitle
+                                            Text(
+                                              training.type.toString(), // Display the training type here
+                                              style: const TextStyle(
+                                                color: Colors.grey, // Choose a color for the subtitle
+                                                fontSize: 14, // Smaller font size for the subtitle
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.edit, color: secondaryColor),
@@ -525,11 +539,12 @@ class _MPageState extends State<MPage> {
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (context) => EditTrainingPage(
-                                                        trainingId: training.id,
-                                                        onSave: initInfo,
-                                                      )),
-                                            ); // Placeholder function to edit the training
+                                                builder: (context) => EditTrainingPage(
+                                                  trainingId: training.id,
+                                                  onSave: initInfo,
+                                                ),
+                                              ),
+                                            );
                                           },
                                         ),
                                       ],

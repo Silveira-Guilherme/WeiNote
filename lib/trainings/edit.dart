@@ -16,18 +16,12 @@ class EditTrainingPage extends StatefulWidget {
 class _EditTrainingPageState extends State<EditTrainingPage> {
   late TextEditingController trainingNameController;
   late TextEditingController trainingTypeController;
-  List<Map<String, dynamic>> exercises = []; // Store exercises with their IDs
+  List<Map<String, dynamic>> exercisesAndMacros = [];
   List<TextEditingController> exerciseControllers = [];
-  List<List<Map<String, dynamic>>> seriesData = []; // Store series and weights
-  List<String> weekDays = [
-    'Segunda-feira',
-    'Terça-feira',
-    'Quarta-feira',
-    'Quinta-feira',
-    'Sexta-feira',
-    'Sábado',
-    'Domingo'
-  ];
+  List<List<Map<String, dynamic>>> seriesData = [];
+  List<Map<String, dynamic>> macros = [];
+  List<Map<String, dynamic>> exercises = [];
+  List<String> weekDays = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
   List<bool> selectedDays = List.generate(7, (index) => false);
 
   @override
@@ -41,45 +35,44 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
   Future<void> fetchTrainingData() async {
     final dbHelper = DatabaseHelper();
 
-    // Fetch training details
-    var trainingDetails = await dbHelper.customQuery(
-        "SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
+    // Clear any existing data before fetching new data
+    exercisesAndMacros.clear();
+    exerciseControllers.clear();
+    seriesData.clear();
+    selectedDays = List.generate(7, (index) => false);
+
+    // Fetch training details (Name and Type) for the specific training ID
+    var trainingDetails = await dbHelper.customQuery("SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
 
     if (trainingDetails.isNotEmpty) {
       trainingNameController.text = trainingDetails[0]['Name'] ?? '';
       trainingTypeController.text = trainingDetails[0]['Type'] ?? '';
     }
 
-    // Fetch exercises for the training
-    var exercisesResult =
-        await dbHelper.customQuery("SELECT Exer.IdExer, Exer.Name FROM Exer "
-            "JOIN Tr_Exer ON Exer.IdExer = Tr_Exer.CodExer "
-            "WHERE Tr_Exer.CodTr = ${widget.trainingId}");
+    // Fetch macros data
+    await fetchMacros(dbHelper);
 
-    for (var exercise in exercisesResult) {
-      exercises.add({'id': exercise['IdExer'], 'name': exercise['Name']});
-      exerciseControllers.add(TextEditingController(text: exercise['Name']));
-      List<Map<String, dynamic>> tempSeries = [];
+    // Fetch exercises data
+    await fetchExercises(dbHelper);
 
-      // Fetch weights and reps for each exercise's series
-      var seriesResult =
-          await dbHelper.customQuery("SELECT s.Peso, s.Rep FROM Serie s "
-              "WHERE s.CodExer = ${exercise['IdExer']}");
-
-      for (var series in seriesResult) {
-        tempSeries.add({
-          'weight': series['Peso'],
-          'repetitions': series['Rep'],
-        });
+    for (int i = 0; i < (macros.length + exercises.length); i++) {
+      for (int j = 0; j < exercises.length; j++) {
+        if (exercises[j]['order'] == i) {
+          exercisesAndMacros.add(exercises[j]);
+          break;
+        }
       }
-      seriesData.add(tempSeries);
+      for (int j = 0; j < macros.length; j++) {
+        if (macros[j]['order'] == i) {
+          exercisesAndMacros.add(macros[j]);
+          break;
+        }
+      }
     }
 
-    // Fetch training days and map them to the weekDays indices
-    var daysResult = await dbHelper.customQuery(
-        "SELECT CodDay FROM Tr_Day WHERE CodTr = ${widget.trainingId}");
+    // Fetch and map training days to the weekDays list
+    var daysResult = await dbHelper.customQuery("SELECT CodDay FROM Tr_Day WHERE CodTr = ${widget.trainingId}");
 
-    // Set the selectedDays based on the retrieved `CodDay` values
     for (var day in daysResult) {
       int idDay = day['CodDay'];
       if (idDay > 0 && idDay <= weekDays.length) {
@@ -87,7 +80,90 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
       }
     }
 
+    // Update the UI after data retrieval
     setState(() {});
+  }
+
+  Future<void> fetchMacros(DatabaseHelper dbHelper) async {
+    macros.clear(); // Clear previous macros
+
+    // Fetch macros for the current training
+    var macrosResult = await dbHelper.customQuery("SELECT DISTINCT Macro.IdMacro, Macro.Qtt, Macro.RSerie, Macro.RExer, m.ExerOrder "
+        "FROM Macro "
+        "JOIN Tr_Macro m ON m.CodMacro = Macro.IdMacro "
+        "WHERE m.CodTr = ${widget.trainingId}");
+
+    for (var row in macrosResult) {
+      List<Map<String, dynamic>> associatedExercises = [];
+
+      // Fetch exercises for the current macro
+      var exercisesResult = await dbHelper.customQuery("SELECT Exer.Name FROM Exer "
+          "JOIN Exer_Macro ON Exer_Macro.CodExer = Exer.IdExer "
+          "WHERE Exer_Macro.CodMacro = ${row['IdMacro']} ORDER BY Exer_Macro.MacroOrder");
+
+      // Store associated exercises
+      List<String> exerciseNames = [];
+      for (var exercise in exercisesResult) {
+        associatedExercises.add({'name': exercise['Name']});
+        exerciseNames.add(exercise['Name']);
+      }
+
+      // Create a dynamic macro title
+      String macroTitle = "Macro: ${exerciseNames.join(' - ')}";
+
+      // Add macro to the exercisesAndMacros list
+      macros.add({
+        'type': 'macro',
+        'id': row['IdMacro'],
+        'title': macroTitle,
+        'qtt': row['Qtt'],
+        'rSerie': row['RSerie'],
+        'rExer': row['RExer'],
+        'exercises': associatedExercises,
+        'order': row['ExerOrder'],
+      });
+    }
+  }
+
+  Future<void> fetchExercises(DatabaseHelper dbHelper) async {
+    // Fetch exercises for the training
+    var exercisesResult = await dbHelper.customQuery("SELECT Exer.IdExer, Exer.Name AS ExerName, Tr_Exer.ExerOrder FROM Exer "
+        "LEFT JOIN Tr_Exer ON Exer.IdExer = Tr_Exer.CodExer "
+        "WHERE Tr_Exer.CodTr = ${widget.trainingId} ORDER BY Tr_Exer.ExerOrder");
+
+    int? currentExerciseId;
+    List<Map<String, dynamic>> tempSeries = [];
+
+    for (var row in exercisesResult) {
+      int exerciseId = row['IdExer'];
+
+      if (currentExerciseId == null || exerciseId != currentExerciseId) {
+        if (tempSeries.isNotEmpty) {
+          seriesData.add(tempSeries);
+          tempSeries = [];
+        }
+
+        exercises.add({
+          'type': 'exercise',
+          'id': exerciseId,
+          'name': row['ExerName'],
+          'order': row['ExerOrder'],
+        });
+        exerciseControllers.add(TextEditingController(text: row['ExerName']));
+        currentExerciseId = exerciseId;
+      }
+
+      // Add series data for the current exercise
+      tempSeries.add({
+        'weight': row['Peso'],
+        'repetitions': row['Rep'],
+      });
+    }
+
+    // Add the last exercise's series data if available
+    if (tempSeries.isNotEmpty) {
+      seriesData.add(tempSeries);
+    }
   }
 
   @override
@@ -105,28 +181,24 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     String trainingType = trainingTypeController.text;
 
     if (trainingName.isEmpty || trainingType.isEmpty) {
-      _showErrorDialog(
-          'Please provide both a name and a type for the training.');
+      _showErrorDialog('Please provide both a name and a type for the training.');
       return;
     }
 
     final dbHelper = DatabaseHelper();
 
     // Update training name and type
-    await dbHelper.updateTraining(
-        widget.trainingId, trainingName, trainingType);
+    await dbHelper.updateTraining(widget.trainingId, trainingName, trainingType);
 
-    // Update exercises with IDs
     for (int i = 0; i < exerciseControllers.length; i++) {
       String exerciseName = exerciseControllers[i].text;
-      int exerciseId = exercises[i]['id'];
+      int exerciseId = exercisesAndMacros[i]['id'];
 
       if (exerciseName.isEmpty) {
         _showErrorDialog('Exercise name cannot be empty');
         return;
       }
 
-      // Use the updateExercise method
       await dbHelper.updateExercise(exerciseId, exerciseName);
     }
 
@@ -134,7 +206,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     await dbHelper.clearTrainingDays(widget.trainingId);
     for (int i = 0; i < selectedDays.length; i++) {
       if (selectedDays[i]) {
-        int idDay = i + 1; // Convert index to 1-based day ID
+        int idDay = i + 1;
         await dbHelper.insertTrainingDay(widget.trainingId, idDay);
       }
     }
@@ -161,39 +233,6 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     );
   }
 
-  void _showEditExerciseDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Exercise'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: exerciseControllers[index],
-                decoration: const InputDecoration(labelText: 'Exercise Name'),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Save'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {});
-              },
-            ),
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -202,8 +241,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           'Edit Training',
-          style: TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 24.0, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0, color: Colors.white),
         ),
         actions: [
           IconButton(
@@ -256,89 +294,102 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                       label: Text(
                         weekDays[index],
                         style: TextStyle(
-                          color: selectedDays[index]
-                              ? secondaryColor
-                              : primaryColor,
+                          color: selectedDays[index] ? secondaryColor : primaryColor,
                         ),
                       ),
-                      backgroundColor:
-                          selectedDays[index] ? primaryColor : secondaryColor,
+                      backgroundColor: selectedDays[index] ? primaryColor : secondaryColor,
                     ),
                   );
                 }),
               ),
               const SizedBox(height: 10),
               const Text(
-                'Exercises:',
+                'Exercises & Macros:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(height: 10),
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: exercises.length,
+                itemCount: exercisesAndMacros.length,
                 itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.all(5.0),
-                    color: accentColor1,
-                    elevation: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.all(1.0),
-                      child: ExpansionTile(
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              exercises[index]['name'],
-                              style: const TextStyle(
-                                color: secondaryColor,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.edit, color: secondaryColor),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => EditExercisePage(
-                                      exerciseId: exercises[index]['id'],
-                                      onSave: () {},
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                        iconColor: secondaryColor,
-                        collapsedIconColor: secondaryColor,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...seriesData[index].map((series) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 4.0),
-                                    child: Text(
-                                      '${series['weight']} kg x${series['repetitions']} Reps',
-                                      style: TextStyle(color: secondaryColor),
-                                    ),
-                                  );
-                                }).toList(),
-                                const SizedBox(height: 10),
-                              ],
+                  var item = exercisesAndMacros[index];
+
+                  // Check if the item is a macro
+                  if (item['type'] == 'macro') {
+                    return Card(
+                      margin: const EdgeInsets.all(5.0),
+                      color: accentColor1,
+                      elevation: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(1.0),
+                        child: ExpansionTile(
+                          title: Text(
+                            item['title'], // This is the macro title
+                            style: const TextStyle(
+                              color: secondaryColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
+                          iconColor: secondaryColor,
+                          collapsedIconColor: secondaryColor,
+                          children: [
+                            ...item['exercises'].map((exercise) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Text(
+                                  exercise['name'],
+                                  style: TextStyle(color: secondaryColor),
+                                ),
+                              );
+                            }).toList(),
+                            const SizedBox(height: 10),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
+
+                  // Check if the item is an exercise
+                  else if (item['type'] == 'exercise') {
+                    return Card(
+                      margin: const EdgeInsets.all(5.0),
+                      color: accentColor1,
+                      elevation: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(1.0),
+                        child: ExpansionTile(
+                          title: Text(
+                            item['name'], // This is the exercise name
+                            style: const TextStyle(
+                              color: secondaryColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          iconColor: secondaryColor,
+                          collapsedIconColor: secondaryColor,
+                          children: [
+                            // Ensure we're only accessing series data if it's valid
+                            if (index < seriesData.length)
+                              ...seriesData[index].map((series) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: Text(
+                                    '${series['weight']} kg x${series['repetitions']} Reps',
+                                    style: TextStyle(color: secondaryColor),
+                                  ),
+                                );
+                              }).toList(),
+                            const SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return Container(); // Fallback in case there's an unexpected item type
                 },
               )
             ],
@@ -347,7 +398,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Logic to add exercise inputs can be implemented here if needed
+          // Logic to add macros inputs can be implemented here if needed
         },
         child: const Icon(Icons.add),
       ),

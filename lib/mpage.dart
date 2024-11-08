@@ -84,6 +84,9 @@ class _MPageState extends State<MPage> {
       m.IdMacro, 
       mt.MacroOrder, 
       m.Qtt AS MacroQtt,
+      m.qtt,
+      m.rserie,
+      m.rexer,
       e.IdExer, 
       e.Name AS ExerciseName, 
       te.ExerOrder,
@@ -151,12 +154,13 @@ class _MPageState extends State<MPage> {
           }
         }
       }
-
       for (var item in macroData) {
         int trainingId = item['CodTr'];
         int macroId = item['MacroId'];
         int macroOrder = item['MacroOrder'] ?? 0;
         int macroQtt = item['MacroQtt'] ?? 0;
+        int macrorserie = item['RSerie'] ?? 0;
+        int macrorexer = item['RExer'] ?? 0;
 
         if (trainingMap.containsKey(trainingId) && macroQtt > 0) {
           Training training = trainingMap[trainingId]!;
@@ -169,7 +173,9 @@ class _MPageState extends State<MPage> {
               Macro newMacro = Macro(
                 id: macroId,
                 order: macroOrder,
-                name: 'Macro Qtt: $macroQtt', // Display Qtt as Macro's name
+                qtt: macroQtt.toString(),
+                rserie: macrorserie.toString(),
+                rexer: macrorexer.toString(), // Display Qtt as Macro
                 exercises: [],
               );
               training.macros.add(newMacro);
@@ -452,47 +458,68 @@ class _MPageState extends State<MPage> {
                               // Create a string with the names of the exercises separated by " - "
                               String exerciseNames = macro.exercises.map((exercise) => exercise.name).join(' - ');
 
-                              trainingWidgets.add(
-                                ExpansionTile(
-                                  iconColor: secondaryColor,
-                                  collapsedIconColor: secondaryColor,
-                                  title: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Macro: ${exerciseNames}', // Display exercise names separated by " - "
-                                          style: const TextStyle(color: secondaryColor),
-                                        ),
-                                      ),
-                                      Checkbox(
-                                        value: macro.completed,
-                                        activeColor: accentColor2,
-                                        onChanged: (bool? value) {
-                                          setState(() {
-                                            macro.completed = value!;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  children: macro.exercises.map<Widget>((exercise) {
-                                    return ExpansionTile(
-                                      title: Text(
-                                        exercise.name,
+                              trainingWidgets.add(ExpansionTile(
+                                iconColor: secondaryColor,
+                                collapsedIconColor: secondaryColor,
+                                title: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Macro: ${exerciseNames}', // Display exercise names separated by " - "
                                         style: const TextStyle(color: secondaryColor),
                                       ),
-                                      children: exercise.weights.map<Widget>((weight) {
-                                        return ListTile(
+                                    ),
+                                    Checkbox(
+                                      value: macro.completed,
+                                      activeColor: accentColor2,
+                                      onChanged: (bool? value) {
+                                        setState(() {
+                                          macro.completed = value!;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                children: [
+                                  // Add the "Quim" text above the exercises list
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Text(
+                                      "Qtt: ${macro.qtt}\n"
+                                      "Rest between Series: ${macro.rserie}s\n"
+                                      "Rest between Exercises: ${macro.rexer}s",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: secondaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                  // Now, display the list of exercises
+                                  ...macro.exercises.map<Widget>((exercise) {
+                                    return Column(
+                                      children: [
+                                        ExpansionTile(
+                                          iconColor: secondaryColor,
+                                          collapsedIconColor: secondaryColor,
                                           title: Text(
-                                            'Peso: ${weight['Peso']} kg, Reps: ${weight['Rep']}',
+                                            exercise.name,
                                             style: const TextStyle(color: secondaryColor),
                                           ),
-                                        );
-                                      }).toList(),
+                                          children: exercise.weights.map<Widget>((weight) {
+                                            return ListTile(
+                                              title: Text(
+                                                'Peso: ${weight['Peso']} kg, Reps: ${weight['Rep']}',
+                                                style: const TextStyle(color: secondaryColor),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        )
+                                      ],
                                     );
                                   }).toList(),
-                                ),
-                              );
+                                ],
+                              ));
                             }
                           }
 

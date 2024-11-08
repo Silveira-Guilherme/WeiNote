@@ -46,14 +46,19 @@ class Training {
 class Macro {
   int id;
   final int order; // Order of the macro within the training
-  String name;
+  String qtt;
+  String rserie;
+  String rexer;
   List<Exercise> exercises; // Exercises under this macro
   bool completed;
   bool isExpanded;
+
   Macro({
     required this.id,
     required this.order,
-    required this.name,
+    required this.qtt,
+    required this.rserie,
+    required this.rexer,
     this.completed = false,
     this.isExpanded = false,
     List<Exercise>? exercises,

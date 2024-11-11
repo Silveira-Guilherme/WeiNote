@@ -64,7 +64,7 @@ class _CreateMacroPageState extends State<CreateMacroPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
-          'Create Macro',
+          'Create Circuit',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -98,7 +98,7 @@ class _CreateMacroPageState extends State<CreateMacroPage> {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Select Exercises for Macro',
+                'Select Exercises for the Circuit',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               // Display exercises with checkboxes
@@ -136,7 +136,7 @@ class _CreateMacroPageState extends State<CreateMacroPage> {
                   ),
                 ),
                 child: const Text(
-                  'Save Macro',
+                  'Save Circuit',
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),

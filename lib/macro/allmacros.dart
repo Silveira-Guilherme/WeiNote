@@ -49,7 +49,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
-          'All Macros',
+          'All Circuits',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -74,7 +74,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                     padding: const EdgeInsets.all(8.0),
                     child: ExpansionTile(
                       title: Text(
-                        'Macro ${macro['IdMacro']}',
+                        'Circuit ${macro['IdMacro']}',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w500,

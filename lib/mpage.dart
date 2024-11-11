@@ -465,7 +465,7 @@ class _MPageState extends State<MPage> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'Macro: ${exerciseNames}', // Display exercise names separated by " - "
+                                        'Circuit: ${exerciseNames}', // Display exercise names separated by " - "
                                         style: const TextStyle(color: secondaryColor),
                                       ),
                                     ),
@@ -630,7 +630,7 @@ class _MPageState extends State<MPage> {
                 },
               ),
               SpeedDialChild(
-                child: const Icon(Icons.add),
+                child: const Icon(Icons.fitness_center),
                 label: 'See All Exercises',
                 foregroundColor: secondaryColor,
                 backgroundColor: primaryColor,
@@ -642,7 +642,7 @@ class _MPageState extends State<MPage> {
                 },
               ),
               SpeedDialChild(
-                child: const Icon(Icons.add),
+                child: const Icon(Icons.change_circle),
                 label: 'See All Macros',
                 foregroundColor: secondaryColor,
                 backgroundColor: primaryColor,

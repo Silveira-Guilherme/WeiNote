@@ -485,7 +485,7 @@ class _MPageState extends State<MPage> {
                                   Padding(
                                     padding: EdgeInsets.symmetric(vertical: 8.0),
                                     child: Text(
-                                      "Qtt: ${macro.qtt}\n"
+                                      "Series: ${macro.qtt}\n"
                                       "Rest between Series: ${macro.rserie}s\n"
                                       "Rest between Exercises: ${macro.rexer}s",
                                       style: const TextStyle(
@@ -643,7 +643,7 @@ class _MPageState extends State<MPage> {
               ),
               SpeedDialChild(
                 child: const Icon(Icons.change_circle),
-                label: 'See All Macros',
+                label: 'See All Circuits',
                 foregroundColor: secondaryColor,
                 backgroundColor: primaryColor,
                 onTap: () {

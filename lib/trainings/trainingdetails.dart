@@ -26,31 +26,31 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
       // Fetch training details
       List<Map<String, dynamic>> trainingResult = await dbHelper.customQuery("SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
 
-      // Fetching training days
+      // Fetch training days
       List<Map<String, dynamic>> daysResult = await dbHelper.customQuery("""
-        SELECT d.Name AS Day FROM Day d 
-        INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
-        WHERE td.CodTr = ${widget.trainingId}
-      """);
+      SELECT d.Name AS Day FROM Day d 
+      INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
+      WHERE td.CodTr = ${widget.trainingId}
+    """);
 
-      // Fetching exercises
+      // Fetch exercises
       List<Map<String, dynamic>> exercisesResult = await dbHelper.customQuery("""
-        SELECT e.Name AS itemName, 'exercise' AS itemType
-        FROM Exer e
-        INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
-        WHERE te.CodTr = ${widget.trainingId}
-      """);
+      SELECT e.Name AS itemName, e.IdExer, 'exercise' AS itemType
+      FROM Exer e
+      INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
+      WHERE te.CodTr = ${widget.trainingId}
+    """);
 
-      // Fetching macros with quantity and associated exercise names
+      // Fetch macros with quantity and associated exercises, grouping by macro ID to avoid duplicate entries
       List<Map<String, dynamic>> macrosResult = await dbHelper.customQuery("""
-        SELECT m.Qtt AS quantity, GROUP_CONCAT(e.Name, ', ') AS exerciseNames, 'macro' AS itemType
-        FROM Macro m
-        JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
-        JOIN Exer e ON em.CodExer = e.IdExer
-        INNER JOIN Tr_Macro tm ON tm.CodMacro = m.IdMacro
-        WHERE tm.CodTr = ${widget.trainingId}
-        GROUP BY m.IdMacro
-      """);
+  SELECT m.IdMacro, m.Qtt AS quantity, GROUP_CONCAT(DISTINCT e.Name) AS exerciseNames, 'macro' AS itemType
+  FROM Macro m
+  JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
+  JOIN Exer e ON em.CodExer = e.IdExer
+  INNER JOIN Tr_Macro tm ON tm.CodMacro = m.IdMacro
+  WHERE tm.CodTr = ${widget.trainingId}
+  GROUP BY m.IdMacro
+""");
 
       // Combine exercises and macros into a single list
       List<Map<String, dynamic>> combinedItems = [...exercisesResult, ...macrosResult];
@@ -155,7 +155,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'Exercises & Macros:',
+                      'Exercises & Circuits:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -173,28 +173,74 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
 
                               return Card(
                                 margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
-                                elevation: 2,
+                                elevation: 3,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.black87,
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: const TextStyle(color: Colors.white),
+                                child: InkWell(
+                                  onTap: () {
+                                    // Optional onTap action to navigate or show details
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundColor: Colors.black87,
+                                          radius: 22,
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12), // Consistent spacing
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                isMacro ? 'Macro: ${item['quantity']}x - ${item['exerciseNames']}' : item['itemName'],
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: isMacro ? FontWeight.w600 : FontWeight.w500,
+                                                  color: isMacro ? Colors.blueAccent : Colors.black87,
+                                                ),
+                                              ),
+                                              if (isMacro)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 4.0),
+                                                  child: Text(
+                                                    'Includes: ${item['exerciseNames']}',
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      color: Colors.grey,
+                                                      fontStyle: FontStyle.italic,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Icon(
+                                          isMacro ? Icons.filter_list : Icons.fitness_center,
+                                          color: isMacro ? Colors.blueAccent : Colors.green,
+                                          size: 28, // Larger icon size for emphasis
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  title: Text(
-                                    isMacro ? '${item['quantity']}x - ${item['exerciseNames']}' : item['itemName'],
-                                    style: const TextStyle(fontSize: 16),
                                   ),
                                 ),
                               );
                             },
                           )
                         : const Text(
-                            'No exercises or macros associated with this training.',
+                            'No exercises or circuits associated with this training.',
                             style: TextStyle(color: Colors.black54),
                           ),
                   ],

@@ -16,7 +16,7 @@ class TrainingDetailsPage extends StatefulWidget {
 class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   String trainingName = '';
-  String trainingType = ''; // Store training type
+  String trainingType = '';
   List<String> trainingDays = [];
   List<Map<String, dynamic>> items = [];
   bool isLoading = true;
@@ -28,32 +28,69 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
 
       // Fetch training days
       List<Map<String, dynamic>> daysResult = await dbHelper.customQuery("""
-      SELECT d.Name AS Day FROM Day d 
-      INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
-      WHERE td.CodTr = ${widget.trainingId}
-    """);
+        SELECT d.Name AS Day 
+        FROM Day d 
+        INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
+        WHERE td.CodTr = ${widget.trainingId}
+      """);
 
-      // Fetch exercises
+      // Fetch exercises with individual peso and rep data
       List<Map<String, dynamic>> exercisesResult = await dbHelper.customQuery("""
-      SELECT e.Name AS itemName, e.IdExer, 'exercise' AS itemType
-      FROM Exer e
-      INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
-      WHERE te.CodTr = ${widget.trainingId}
-    """);
+        SELECT e.Name AS itemName, e.IdExer, 'exercise' AS itemType, 
+               GROUP_CONCAT(s.Peso) AS pesos, GROUP_CONCAT(s.Rep) AS reps
+        FROM Exer e
+        INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
+        LEFT JOIN Serie s ON s.CodExer = e.IdExer
+        WHERE te.CodTr = ${widget.trainingId}
+        GROUP BY e.IdExer
+      """);
 
-      // Fetch macros with quantity and associated exercises, grouping by macro ID to avoid duplicate entries
+      // Fetch macros with quantity and associated exercises, along with their peso and rep values
       List<Map<String, dynamic>> macrosResult = await dbHelper.customQuery("""
-  SELECT m.IdMacro, m.Qtt AS quantity, GROUP_CONCAT(DISTINCT e.Name) AS exerciseNames, 'macro' AS itemType
-  FROM Macro m
-  JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
-  JOIN Exer e ON em.CodExer = e.IdExer
-  INNER JOIN Tr_Macro tm ON tm.CodMacro = m.IdMacro
-  WHERE tm.CodTr = ${widget.trainingId}
-  GROUP BY m.IdMacro
-""");
+   SELECT 
+  m.IdMacro, 
+  m.Qtt AS quantity, 
+  e.Name AS exerciseName, 
+  e.IdExer AS exerciseId, 
+  s.Peso, 
+  s.Rep, 
+  'macro' AS itemType
+FROM 
+  Macro m
+JOIN 
+  Exer_Macro em ON m.IdMacro = em.CodMacro
+JOIN 
+  Exer e ON em.CodExer = e.IdExer
+INNER JOIN 
+  Tr_Macro tm ON tm.CodMacro = m.IdMacro
+LEFT JOIN 
+  Serie s ON s.CodExer = e.IdExer
+WHERE 
+  tm.CodTr = ${widget.trainingId}
+ORDER BY 
+  m.IdMacro, e.Name, s.Peso;
+      """);
+      print(macrosResult);
 
       // Combine exercises and macros into a single list
-      List<Map<String, dynamic>> combinedItems = [...exercisesResult, ...macrosResult];
+      List<Map<String, dynamic>> combinedItems = [];
+      Map<int, Map<String, dynamic>> macroMap = {};
+
+      // Process and combine exercises
+      for (var exercise in exercisesResult) {
+        combinedItems.add(exercise);
+      }
+
+      // Process and combine macros (avoid duplicates)
+      for (var macro in macrosResult) {
+        int macroId = macro['IdMacro'];
+        if (!macroMap.containsKey(macroId)) {
+          macroMap[macroId] = macro;
+        }
+      }
+
+      // Add macros to the combined list without duplicates
+      combinedItems.addAll(macroMap.values);
 
       setState(() {
         trainingName = trainingResult.isNotEmpty ? trainingResult[0]['Name'] : 'Unnamed Training';
@@ -172,68 +209,80 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                               bool isMacro = item['itemType'] == 'macro';
 
                               return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
-                                elevation: 3,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: InkWell(
-                                  onTap: () {
-                                    // Optional onTap action to navigate or show details
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                margin: const EdgeInsets.all(3.0),
+                                color: accentColor1,
+                                elevation: 5,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(3.0),
+                                  child: ExpansionTile(
+                                    title: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        CircleAvatar(
-                                          backgroundColor: Colors.black87,
-                                          radius: 22,
-                                          child: Text(
-                                            '${index + 1}',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
+                                        Text(
+                                          isMacro ? 'Macro: ${item['quantity']}x - Exercises' : item['itemName'],
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w500,
+                                            color: secondaryColor,
                                           ),
                                         ),
-                                        const SizedBox(width: 12), // Consistent spacing
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                isMacro ? 'Macro: ${item['quantity']}x - ${item['exerciseNames']}' : item['itemName'],
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: isMacro ? FontWeight.w600 : FontWeight.w500,
-                                                  color: isMacro ? Colors.blueAccent : Colors.black87,
-                                                ),
-                                              ),
-                                              if (isMacro)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 4.0),
-                                                  child: Text(
-                                                    'Includes: ${item['exerciseNames']}',
-                                                    style: const TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.grey,
-                                                      fontStyle: FontStyle.italic,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          isMacro ? Icons.filter_list : Icons.fitness_center,
-                                          color: isMacro ? Colors.blueAccent : Colors.green,
-                                          size: 28, // Larger icon size for emphasis
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, color: secondaryColor),
+                                          onPressed: () {},
                                         ),
                                       ],
                                     ),
+                                    children: isMacro
+                                        ? item['exerciseName'] != null && item['exerciseName'] is String
+                                            ? item['exerciseName']!.split(',').asMap().entries.map<Widget>((entry) {
+                                                int exerciseIndex = entry.key;
+                                                String exerciseName = entry.value.trim();
+
+                                                // Now let's fetch the corresponding Peso and Rep for each exercise.
+                                                List<String> pesoList = item['Peso']?.toString().split(',') ?? [];
+                                                List<String> repList = item['Rep']?.toString().split(',') ?? [];
+
+                                                // Check if there are enough `peso` and `rep` values to match exercises
+                                                // If there's a mismatch, we can either handle the error or show a fallback message.
+                                                if (pesoList.length != repList.length) {
+                                                  return Padding(
+                                                    padding: const EdgeInsets.all(8.0),
+                                                    child: Text(
+                                                      'Mismatch in sets data for $exerciseName!',
+                                                      style: const TextStyle(fontSize: 14, color: Colors.red),
+                                                    ),
+                                                  );
+                                                }
+
+                                                // Displaying each set for the exercise
+                                                return Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                                                  child: ExpansionTile(
+                                                    title: Text(
+                                                      exerciseName,
+                                                      style: const TextStyle(fontSize: 16, color: secondaryColor),
+                                                    ),
+                                                    children: List.generate(pesoList.length, (setIndex) {
+                                                      String peso = pesoList[setIndex];
+                                                      String rep = repList[setIndex];
+
+                                                      return Padding(
+                                                        padding: const EdgeInsets.all(8.0),
+                                                        child: Text(
+                                                          'Set ${setIndex + 1}: Peso: $peso kg, Reps: $rep',
+                                                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                                        ),
+                                                      );
+                                                    }),
+                                                  ),
+                                                );
+                                              }).toList()
+                                            : [
+                                                const Text('No exercises for this macro', style: TextStyle(color: Colors.black54)),
+                                              ]
+                                        : [
+                                            const Text('No exercises available for this item'),
+                                          ],
                                   ),
                                 ),
                               );

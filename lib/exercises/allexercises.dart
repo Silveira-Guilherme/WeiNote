@@ -59,8 +59,7 @@ class _AllExercisesPageState extends State<AllExercisesPage> {
       ),
       body: exercises.isEmpty
           ? const Center(child: Text("No Exercises Found"))
-          : ListView.separated(
-              separatorBuilder: (context, index) => const Divider(),
+          : ListView.builder(
               itemCount: exercises.length,
               itemBuilder: (context, index) {
                 var exercise = exercises[index];

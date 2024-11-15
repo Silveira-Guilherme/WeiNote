@@ -202,9 +202,17 @@ class _MPageState extends State<MPage> {
               },
             );
 
-            // Add weights to the exercise
+            // Add weights to the exercise only if they haven't been added already
             if (item['Peso'] != null && item['Rep'] != null) {
-              macroExercise.weights.add({'Peso': item['Peso'], 'Rep': item['Rep']});
+              // Check if the same weights already exist to avoid duplication
+              bool weightExists = macroExercise.weights.any((weight) {
+                return weight['Peso'] == item['Peso'] && weight['Rep'] == item['Rep'];
+              });
+
+              // Only add the weight if it doesn't already exist
+              if (!weightExists) {
+                macroExercise.weights.add({'Peso': item['Peso'], 'Rep': item['Rep']});
+              }
             }
           }
         }

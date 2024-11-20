@@ -291,6 +291,8 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                                                   List<dynamic> repList = entry.value['Rep'];
 
                                                   return ExpansionTile(
+                                                    iconColor: secondaryColor,
+                                                    collapsedIconColor: secondaryColor,
                                                     title: Text(
                                                       exerciseName,
                                                       style: const TextStyle(fontSize: 16, color: secondaryColor),

@@ -109,6 +109,7 @@ class _MPageState extends State<MPage> {
     ORDER BY 
       tm.CodTr, mt.MacroOrder, te.ExerOrder
     """);
+      print(macroData);
 
       // Initialize training map
       Map<int, Training> trainingMap = {};

@@ -25,16 +25,76 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
   // Fetch macros and their exercises
   Future<void> fetchMacros() async {
     List<Map<String, dynamic>> queryResult = await dbHelper.customQuery("""
-      SELECT m.IdMacro, m.Qtt, m.RSerie, m.RExer, GROUP_CONCAT(e.Name) AS Exercises
-      FROM Macro m
-      LEFT JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
-      LEFT JOIN Exer e ON em.CodExer = e.IdExer
-      GROUP BY m.IdMacro
-    """);
+    SELECT 
+      m.IdMacro, 
+      m.Qtt, 
+      m.RSerie, 
+      m.RExer, 
+      e.Name AS ExerciseName, 
+      em.MacroOrder,
+      s.Peso, 
+      s.Rep
+    FROM 
+      Macro m
+    LEFT JOIN 
+      Exer_Macro em ON m.IdMacro = em.CodMacro
+    LEFT JOIN 
+      Exer e ON em.CodExer = e.IdExer
+    LEFT JOIN 
+      Serie s ON e.IdExer = s.CodExer
+    ORDER BY 
+      m.IdMacro, em.MacroOrder, s.IdSerie;
+  """);
+
+    // Group exercises by macro
+    Map<int, List<Map<String, dynamic>>> groupedMacros = {};
+
+    for (var row in queryResult) {
+      int macroId = row['IdMacro'];
+
+      if (!groupedMacros.containsKey(macroId)) {
+        groupedMacros[macroId] = [];
+      }
+
+      var existingExercise = groupedMacros[macroId]!.firstWhere((exercise) => exercise['ExerciseName'] == row['ExerciseName'], orElse: () => {} // Return an empty map if no existing exercise is found
+          );
+
+      if (existingExercise.isEmpty) {
+        groupedMacros[macroId]!.add({
+          'ExerciseName': row['ExerciseName'],
+          'MacroOrder': row['MacroOrder'],
+          'Sets': [
+            {
+              'Peso': row['Peso'],
+              'Rep': row['Rep'],
+            }
+          ],
+        });
+      } else {
+        // Add sets (Peso, Rep) to the existing exercise
+        existingExercise['Sets'].add({
+          'Peso': row['Peso'],
+          'Rep': row['Rep'],
+        });
+      }
+    }
+
+    // Format the final list of macros
+    List<Map<String, dynamic>> formattedMacros = [];
+    for (var macroId in groupedMacros.keys) {
+      var firstRow = queryResult.firstWhere((row) => row['IdMacro'] == macroId);
+      formattedMacros.add({
+        'IdMacro': macroId,
+        'Qtt': firstRow['Qtt'],
+        'RSerie': firstRow['RSerie'],
+        'RExer': firstRow['RExer'],
+        'Exercises': groupedMacros[macroId],
+      });
+    }
 
     setState(() {
-      macros = queryResult;
-      expandedList = List.generate(macros.length, (index) => false);
+      macros = formattedMacros;
+      expandedList = List.generate(macros.length, (index) => false); // Initialize expandedList
     });
   }
 
@@ -69,7 +129,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
               itemCount: macros.length,
               itemBuilder: (context, index) {
                 var macro = macros[index];
-                List<String> exercises = (macro['Exercises'] ?? '').split(',');
+                List<Map<String, dynamic>> exercises = macro['Exercises'];
 
                 return Card(
                   margin: const EdgeInsets.all(10),
@@ -80,7 +140,6 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                     child: Column(
                       children: [
                         ExpansionTile(
-                          // Title text with alignment
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -92,7 +151,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                   fontSize: 20,
                                 ),
                               ),
-                              const SizedBox(height: 4), // Spacing between title and subtitle
+                              const SizedBox(height: 4),
                               Text(
                                 'Qtt: ${macro['Qtt']}, RSerie: ${macro['RSerie']}, RExer: ${macro['RExer']}',
                                 style: const TextStyle(
@@ -102,37 +161,25 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                               ),
                             ],
                           ),
-                          // Row for the edit icon next to the expansion icon
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit, color: secondaryColor),
                                 onPressed: () {
-                                  // Navigate to EditMacroPage when the icon is pressed
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditMacroPage(
-                                        macroId: macro['IdMacro'],
-                                      ),
-                                    ),
-                                  );
+                                  // Edit Macro
                                 },
                               ),
                               const SizedBox(width: 10),
-                              // Expanded icon will appear automatically
                               const Icon(Icons.expand_more, color: secondaryColor),
                             ],
                           ),
-
                           iconColor: secondaryColor,
                           collapsedIconColor: secondaryColor,
                           onExpansionChanged: (expanded) {
                             toggleExpanded(index);
                           },
-                          // Display exercises or show a message if none exist
-                          children: exercises.isEmpty || exercises[0].isEmpty
+                          children: exercises.isEmpty
                               ? [
                                   const Padding(
                                     padding: EdgeInsets.all(8.0),
@@ -143,11 +190,40 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                   ),
                                 ]
                               : exercises.map((exercise) {
+                                  List<Map<String, dynamic>> sets = exercise['Sets'];
+
                                   return Padding(
                                     padding: const EdgeInsets.all(5.0),
-                                    child: Text(
-                                      'Exercise: $exercise',
-                                      style: const TextStyle(color: secondaryColor),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Exercise: ${exercise['ExerciseName']}',
+                                          style: const TextStyle(color: secondaryColor),
+                                        ),
+                                        // ExpansionTile to show Peso and Reps for each set
+                                        ExpansionTile(
+                                          title: const Text(
+                                            'Sets',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: secondaryColor,
+                                            ),
+                                          ),
+                                          children: sets.map((set) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(left: 10.0),
+                                              child: Text(
+                                                'Peso: ${set['Peso']} - Reps: ${set['Rep']}',
+                                                style: const TextStyle(
+                                                  color: secondaryColor,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
                                     ),
                                   );
                                 }).toList(),
@@ -156,8 +232,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                     ),
                   ),
                 );
-              },
-            ),
+              }),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,

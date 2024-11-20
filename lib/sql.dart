@@ -47,7 +47,7 @@ class DatabaseHelper {
 
     await db.execute("CREATE TABLE IF NOT EXISTS Macro(IdMacro INTEGER PRIMARY KEY, Qtt INTEGER, RSerie INTEGER, RExer INTEGER)");
 
-    await db.execute("CREATE TABLE IF NOT EXISTS Exer_Macro(IdExer_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodExer INTEGER, MacroOrder INT, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
+    await db.execute("CREATE TABLE IF NOT EXISTS Exer_Macro(IdExer_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodExer INTEGER, MacroOrder INT NOT NULL DEFAULT 1, FOREIGN KEY (CodExer) REFERENCES Exer(IdExer), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
 
     await db.execute("CREATE TABLE IF NOT EXISTS Tr_Macro(IdTr_Macro INTEGER PRIMARY KEY, CodMacro INTEGER, CodTr INTEGER, ExerOrder INT, FOREIGN KEY (CodTr) REFERENCES Tr(IdTr), FOREIGN KEY (CodMacro) REFERENCES Macro(IdMacro))");
 
@@ -269,6 +269,7 @@ class DatabaseHelper {
   // Function to insert a new exercise-macro association into Exer_Macro
   Future<int> addExerMacro(int macroId, int exerId, int order) async {
     final db = await database;
+
     return await db.insert('Exer_Macro', {
       'CodMacro': macroId,
       'CodExer': exerId,

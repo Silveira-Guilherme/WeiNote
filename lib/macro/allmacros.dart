@@ -193,31 +193,30 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                   List<Map<String, dynamic>> sets = exercise['Sets'];
 
                                   return Padding(
-                                    padding: const EdgeInsets.all(5.0),
+                                    padding: const EdgeInsets.only(top: 8, bottom: 8),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start, // Aligns children to the left
                                       children: [
-                                        Text(
-                                          'Exercise: ${exercise['ExerciseName']}',
-                                          style: const TextStyle(color: secondaryColor),
-                                        ),
                                         // ExpansionTile to show Peso and Reps for each set
                                         ExpansionTile(
-                                          title: const Text(
-                                            'Sets',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: secondaryColor,
-                                            ),
+                                          iconColor: secondaryColor,
+                                          collapsedIconColor: secondaryColor,
+                                          title: Text(
+                                            exercise['ExerciseName'],
+                                            style: TextStyle(color: secondaryColor, fontSize: 16),
                                           ),
                                           children: sets.map((set) {
                                             return Padding(
-                                              padding: const EdgeInsets.only(left: 10.0),
-                                              child: Text(
-                                                'Peso: ${set['Peso']} - Reps: ${set['Rep']}',
-                                                style: const TextStyle(
-                                                  color: secondaryColor,
-                                                  fontSize: 14,
+                                              padding: const EdgeInsets.only(left: 16.0, top: 8, bottom: 16), // Adds space from the left
+                                              child: Align(
+                                                alignment: Alignment.centerLeft, // Explicitly aligns the text to the left
+                                                child: Text(
+                                                  'Peso: ${set['Peso']},   Reps: ${set['Rep']}',
+                                                  style: const TextStyle(
+                                                    color: secondaryColor,
+                                                    fontSize: 16,
+                                                  ),
+                                                  textAlign: TextAlign.left, // Aligns the text content to the left
                                                 ),
                                               ),
                                             );

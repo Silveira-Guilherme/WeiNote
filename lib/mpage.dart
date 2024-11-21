@@ -471,11 +471,26 @@ class _MPageState extends State<MPage> {
                                 iconColor: secondaryColor,
                                 collapsedIconColor: secondaryColor,
                                 title: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start, // Ensures children in the Row align to the start
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        'Circuit: ${exerciseNames}', // Display exercise names separated by " - "
-                                        style: const TextStyle(color: secondaryColor),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start, // Aligns children of the Column to the left
+                                        children: [
+                                          Text(
+                                            'Circuit: ${exerciseNames}', // Display exercise names separated by " - "
+                                            style: const TextStyle(
+                                              color: secondaryColor,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Series: ${macro.qtt}, RSerie: ${macro.rserie}, RExer: ${macro.rexer}',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     Checkbox(
@@ -490,18 +505,26 @@ class _MPageState extends State<MPage> {
                                   ],
                                 ),
                                 children: [
-                                  // Add the "Quim" text above the exercises list
                                   Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                                    child: Text(
-                                      "Series: ${macro.qtt}\n"
-                                      "Rest between Series: ${macro.rserie}s\n"
-                                      "Rest between Exercises: ${macro.rexer}s",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: secondaryColor,
-                                      ),
+                                    padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      // Align at the start of the row
+                                      children: [
+                                        Expanded(
+                                          // Optional to manage width
+                                          child: Text(
+                                            "Series: ${macro.qtt}\n"
+                                            "Rest between Series: ${macro.rserie}s\n"
+                                            "Rest between Exercises: ${macro.rexer}s",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: secondaryColor,
+                                            ),
+                                            textAlign: TextAlign.left, // Align text to the left
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   // Now, display the list of exercises

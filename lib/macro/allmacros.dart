@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gymdo/macro/createmacro.dart';
-import 'package:gymdo/macro/editmacro.dart';
 import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
@@ -56,8 +55,10 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
         groupedMacros[macroId] = [];
       }
 
-      var existingExercise = groupedMacros[macroId]!.firstWhere((exercise) => exercise['ExerciseName'] == row['ExerciseName'], orElse: () => {} // Return an empty map if no existing exercise is found
-          );
+      var existingExercise = groupedMacros[macroId]!.firstWhere(
+        (exercise) => exercise['ExerciseName'] == row['ExerciseName'],
+        orElse: () => {},
+      );
 
       if (existingExercise.isEmpty) {
         groupedMacros[macroId]!.add({
@@ -71,7 +72,6 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
           ],
         });
       } else {
-        // Add sets (Peso, Rep) to the existing exercise
         existingExercise['Sets'].add({
           'Peso': row['Peso'],
           'Rep': row['Rep'],
@@ -109,16 +109,11 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        iconTheme: const IconThemeData(
-          color: secondaryColor, // Change the back button color to white
-        ),
+        iconTheme: const IconThemeData(color: secondaryColor), // Change the back button color to white
         backgroundColor: Colors.black,
         title: const Text(
           'All Circuits',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -139,46 +134,41 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
                       children: [
+                        // This is the top ExpansionTile for each macro
                         ExpansionTile(
-                          title: Column(
+                          title: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Circuit ${macro['IdMacro']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: secondaryColor,
-                                  fontSize: 20,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Circuit ${macro['IdMacro']}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: secondaryColor,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Qtt: ${macro['Qtt']}, RSerie: ${macro['RSerie']}, RExer: ${macro['RExer']}',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Qtt: ${macro['Qtt']}, RSerie: ${macro['RSerie']}, RExer: ${macro['RExer']}',
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
+                              Spacer(), // This pushes the edit icon to the far right
                               IconButton(
                                 icon: const Icon(Icons.edit, color: secondaryColor),
-                                onPressed: () {
-                                  // Edit Macro
-                                },
+                                onPressed: () {},
                               ),
-                              const SizedBox(width: 10),
-                              const Icon(Icons.expand_more, color: secondaryColor),
                             ],
                           ),
                           iconColor: secondaryColor,
                           collapsedIconColor: secondaryColor,
-                          onExpansionChanged: (expanded) {
-                            toggleExpanded(index);
-                          },
                           children: exercises.isEmpty
                               ? [
                                   const Padding(
@@ -192,38 +182,39 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                               : exercises.map((exercise) {
                                   List<Map<String, dynamic>> sets = exercise['Sets'];
 
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 8, bottom: 8),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start, // Aligns children to the left
-                                      children: [
-                                        // ExpansionTile to show Peso and Reps for each set
-                                        ExpansionTile(
-                                          iconColor: secondaryColor,
-                                          collapsedIconColor: secondaryColor,
-                                          title: Text(
-                                            exercise['ExerciseName'],
-                                            style: TextStyle(color: secondaryColor, fontSize: 16),
-                                          ),
-                                          children: sets.map((set) {
+                                  return ExpansionTile(
+                                    title: Text(
+                                      exercise['ExerciseName'],
+                                      style: TextStyle(
+                                        color: secondaryColor,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    iconColor: secondaryColor,
+                                    collapsedIconColor: secondaryColor,
+                                    children: sets.isEmpty
+                                        ? [
+                                            const Padding(
+                                              padding: EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'No sets available',
+                                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                                              ),
+                                            ),
+                                          ]
+                                        : sets.map((set) {
                                             return Padding(
-                                              padding: const EdgeInsets.only(left: 16.0, top: 8, bottom: 16), // Adds space from the left
-                                              child: Align(
-                                                alignment: Alignment.centerLeft, // Explicitly aligns the text to the left
-                                                child: Text(
-                                                  'Peso: ${set['Peso']},   Reps: ${set['Rep']}',
-                                                  style: const TextStyle(
-                                                    color: secondaryColor,
-                                                    fontSize: 16,
-                                                  ),
-                                                  textAlign: TextAlign.left, // Aligns the text content to the left
+                                              padding: const EdgeInsets.only(left: 16.0, top: 8, bottom: 8),
+                                              child: Text(
+                                                'Peso: ${set['Peso']}, Reps: ${set['Rep']}',
+                                                style: const TextStyle(
+                                                  color: secondaryColor,
+                                                  fontSize: 14,
                                                 ),
                                               ),
                                             );
                                           }).toList(),
-                                        ),
-                                      ],
-                                    ),
                                   );
                                 }).toList(),
                         ),
@@ -231,7 +222,8 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                     ),
                   ),
                 );
-              }),
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gymdo/macro/createmacro.dart';
+import 'package:gymdo/macro/editmacro.dart';
 import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
@@ -163,7 +164,12 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                               Spacer(), // This pushes the edit icon to the far right
                               IconButton(
                                 icon: const Icon(Icons.edit, color: secondaryColor),
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => EditMacroPage(macroId: int.parse(macro['IdMacro']))),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -188,7 +194,6 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                       style: TextStyle(
                                         color: secondaryColor,
                                         fontSize: 16,
-                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     iconColor: secondaryColor,
@@ -205,13 +210,18 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                           ]
                                         : sets.map((set) {
                                             return Padding(
-                                              padding: const EdgeInsets.only(left: 16.0, top: 8, bottom: 8),
-                                              child: Text(
-                                                'Peso: ${set['Peso']}, Reps: ${set['Rep']}',
-                                                style: const TextStyle(
-                                                  color: secondaryColor,
-                                                  fontSize: 14,
-                                                ),
+                                              padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
+                                              child: Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Peso: ${set['Peso']}, Reps: ${set['Rep']}',
+                                                    style: const TextStyle(
+                                                      color: secondaryColor,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             );
                                           }).toList(),

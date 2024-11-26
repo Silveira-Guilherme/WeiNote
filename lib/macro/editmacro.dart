@@ -22,29 +22,52 @@ class _EditMacroPageState extends State<EditMacroPage> {
     fetchMacroDetails();
   }
 
-  // Fetch macro quantity and exercises from the database
   Future<void> fetchMacroDetails() async {
-    // Fetch quantity for the macro
-    var result = await dbHelper.customQuery("""
-      SELECT Qtt FROM Macro WHERE IdMacro = ${widget.macroId}
+    try {
+      // Fetch macro details and exercises in one query
+      List<Map<String, dynamic>> result = await dbHelper.customQuery("""
+      SELECT 
+        m.Qtt, 
+        e.IdExer AS id, 
+        e.Name AS Name,
+        em.CodMacro AS CodMacro
+      FROM 
+        Macro m
+      LEFT JOIN 
+        Exer_Macro em ON m.IdMacro = em.CodMacro
+      LEFT JOIN 
+        Exer e ON em.CodExer = e.IdExer
+      WHERE 
+        m.IdMacro = ${widget.macroId}
     """);
-    if (result.isNotEmpty) {
-      quantity = result.first['Qtt'] ?? 1;
+
+      // Parse the result
+      int? macroQuantity = result.isNotEmpty ? result.first['Qtt'] : null;
+
+      // Extract all exercises
+      List<Map<String, dynamic>> allExercises = result
+          .where((row) => row['id'] != null)
+          .map((row) => {
+                'id': row['id'],
+                'Name': row['Name'] ?? 'Unnamed Exercise', // Default name if null
+              })
+          .toList();
+
+      // Extract current exercises associated with the macro
+      Set<int> selectedExercises = {
+        ...result.where((row) => row['CodMacro'] != null).map((row) => row['id']),
+      };
+
+      // Update the state
+      setState(() {
+        quantity = macroQuantity ?? 1; // Default quantity to 1 if null
+        exercises = allExercises;
+        macroExercises = selectedExercises;
+      });
+    } catch (error) {
+      print('Error fetching macro details: $error');
+      // Handle errors, like showing a message to the user
     }
-
-    // Fetch exercises associated with this macro
-    List<Map<String, dynamic>> allExercises = await dbHelper.customQuery("""
-      SELECT IdExer AS id, Name FROM Exer
-    """);
-
-    List<Map<String, dynamic>> currentExercises = await dbHelper.customQuery("""
-      SELECT CodExer AS id FROM Exer_Macro WHERE CodMacro = ${widget.macroId}
-    """);
-
-    setState(() {
-      exercises = allExercises;
-      macroExercises = {...currentExercises.map((e) => e['id'])};
-    });
   }
 
   // Toggle exercise selection for this macro

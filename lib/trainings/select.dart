@@ -20,8 +20,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
 
   // Fetch all trainings from the database
   Future<void> fetchTrainings() async {
-    List<Map<String, dynamic>> queryResult =
-        await dbHelper.customQuery("SELECT * FROM Tr");
+    List<Map<String, dynamic>> queryResult = await dbHelper.customQuery("SELECT * FROM Tr");
     setState(() {
       trainings = queryResult;
       isLoading = false;
@@ -38,8 +37,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize:
-            const Size.fromHeight(70.0), // Adjust the height of the AppBar
+        preferredSize: const Size.fromHeight(70.0), // Adjust the height of the AppBar
         child: AppBar(
           backgroundColor: primaryColor,
           iconTheme: const IconThemeData(
@@ -66,8 +64,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
                     var training = trainings[index];
                     return Card(
                       margin: const EdgeInsets.all(10),
-                      color:
-                          accentColor1, // Ensure this color is defined in your main.dart
+                      color: accentColor1, // Ensure this color is defined in your main.dart
                       elevation: 5,
                       child: InkWell(
                         // Use InkWell for touch feedback
@@ -76,8 +73,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => TrainingDetailsPage(
-                                trainingId: training[
-                                    'IdTr'], // Use training['IdTr'] here
+                                trainingId: training['IdTr'], // Use training['IdTr'] here
                               ),
                             ),
                           );
@@ -85,24 +81,20 @@ class _TrainingListPageState extends State<TrainingListPage> {
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment
-                                .spaceBetween, // Space between text and icon
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between text and icon
                             children: [
                               // Training name text
                               Text(
                                 training['Name'] ?? 'Unnamed Training',
                                 style: const TextStyle(
-                                  color:
-                                      secondaryColor, // Ensure this color is defined in your main.dart
-                                  fontSize:
-                                      20, // Increase font size for better visibility
+                                  color: secondaryColor, // Ensure this color is defined in your main.dart
+                                  fontSize: 20, // Increase font size for better visibility
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               // Eye icon
                               IconButton(
-                                icon: const Icon(Icons.remove_red_eye,
-                                    color: secondaryColor),
+                                icon: const Icon(Icons.remove_red_eye, color: secondaryColor),
                                 onPressed: () {
                                   // Navigate to TrainingDetailsPage when the icon is pressed
                                   Navigator.push(

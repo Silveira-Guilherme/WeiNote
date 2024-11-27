@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '/../sql.dart';
 
 class EditMacroPage extends StatefulWidget {
-  final int macroId;
+  final String macroId;
 
   const EditMacroPage({Key? key, required this.macroId}) : super(key: key);
 
@@ -15,62 +15,106 @@ class _EditMacroPageState extends State<EditMacroPage> {
   List<Map<String, dynamic>> exercises = [];
   Set<int> macroExercises = {};
   int quantity = 1; // Default quantity
+  int rSerie = 0; // Default reps per series
+  int rExer = 0; // Default reps per exercise
+  bool isLoading = true; // Track loading state
 
   @override
   void initState() {
     super.initState();
-    fetchMacroDetails();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchMacroDetails();
+    });
   }
 
   Future<void> fetchMacroDetails() async {
+    if (!mounted) return; // Prevent running if widget is no longer in context
+    setState(() {
+      isLoading = true;
+    });
+
     try {
-      // Fetch macro details and exercises in one query
-      List<Map<String, dynamic>> result = await dbHelper.customQuery("""
-      SELECT 
-        m.Qtt, 
-        e.IdExer AS id, 
-        e.Name AS Name,
-        em.CodMacro AS CodMacro
-      FROM 
-        Macro m
-      LEFT JOIN 
-        Exer_Macro em ON m.IdMacro = em.CodMacro
-      LEFT JOIN 
-        Exer e ON em.CodExer = e.IdExer
-      WHERE 
-        m.IdMacro = ${widget.macroId}
+      // Fetching macro details, including RSerie and RExer
+      final result = await dbHelper.customQuery("""
+    SELECT 
+      m.Qtt AS quantity, 
+      m.RSerie, 
+      m.RExer,
+      e.IdExer AS id, 
+      e.Name AS exerciseName,
+      em.CodMacro AS macroId,
+      s.Peso, 
+      s.Rep,
+      s.IdSerie AS serieId,
+      em.MacroOrder
+    FROM 
+      Macro m
+    LEFT JOIN 
+      Exer_Macro em ON m.IdMacro = em.CodMacro
+    LEFT JOIN 
+      Exer e ON em.CodExer = e.IdExer
+    LEFT JOIN 
+      Serie s ON e.IdExer = s.CodExer
+    WHERE 
+      m.IdMacro = ${widget.macroId}
     """);
 
-      // Parse the result
-      int? macroQuantity = result.isNotEmpty ? result.first['Qtt'] : null;
+      print("fetchMacroDetails called");
+      print(result);
 
-      // Extract all exercises
-      List<Map<String, dynamic>> allExercises = result
-          .where((row) => row['id'] != null)
-          .map((row) => {
-                'id': row['id'],
-                'Name': row['Name'] ?? 'Unnamed Exercise', // Default name if null
-              })
-          .toList();
+      // Extract macro-level details: RSerie, RExer, and quantity
+      final macroQuantity = result.isNotEmpty ? result.first['quantity'] as int? : 1;
+      final rSerie = result.isNotEmpty && result.first['RSerie'] != null ? result.first['RSerie'] as int : 0;
+      final rExer = result.isNotEmpty && result.first['RExer'] != null ? result.first['RExer'] as int : 0;
 
-      // Extract current exercises associated with the macro
-      Set<int> selectedExercises = {
-        ...result.where((row) => row['CodMacro'] != null).map((row) => row['id']),
-      };
+      // Group exercises by exercise ID
+      Map<int, List<Map<String, dynamic>>> groupedExercises = {};
+      for (var row in result) {
+        final exerciseId = row['id'];
+        final exerciseDetails = {
+          'Peso': row['Peso'] ?? 0,
+          'Rep': row['Rep'] ?? 0,
+          'serieId': row['serieId'] ?? 0,
+          'exerciseName': row['exerciseName'] ?? '',
+        };
 
-      // Update the state
+        // Grouping the exercises by their id
+        if (groupedExercises.containsKey(exerciseId)) {
+          groupedExercises[exerciseId]?.add(exerciseDetails);
+        } else {
+          groupedExercises[exerciseId] = [exerciseDetails];
+        }
+      }
+
+      // Prepare a list for UI display, with grouped exercises and their respective details
+      List<Map<String, dynamic>> allExercises = [];
+      groupedExercises.forEach((id, details) {
+        allExercises.add({
+          'id': id,
+          'exerciseName': details.first['exerciseName'],
+          'sets': details, // Multiple Peso/Rep values for each exercise
+        });
+      });
+
       setState(() {
-        quantity = macroQuantity ?? 1; // Default quantity to 1 if null
+        quantity = macroQuantity ?? 1; // Default to 1 if null
+        this.rSerie = rSerie; // Set RSerie at the macro level
+        this.rExer = rExer; // Set RExer at the macro level
         exercises = allExercises;
-        macroExercises = selectedExercises;
+        isLoading = false; // Done loading
       });
     } catch (error) {
       print('Error fetching macro details: $error');
-      // Handle errors, like showing a message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load data. Please try again later.')),
+      );
+      setState(() {
+        isLoading = false; // Stop loading even on error
+      });
     }
   }
 
-  // Toggle exercise selection for this macro
+  // Toggle exercise selection
   void toggleExerciseSelection(int exerciseId) {
     setState(() {
       if (macroExercises.contains(exerciseId)) {
@@ -83,24 +127,33 @@ class _EditMacroPageState extends State<EditMacroPage> {
 
   // Save changes to macro's quantity and exercises
   Future<void> saveMacroChanges() async {
-    // Update macro quantity
-    await dbHelper.customQuery("""
-      UPDATE Macro SET Qtt = $quantity WHERE IdMacro = ${widget.macroId}
-    """);
-
-    // Delete existing exercise links for the macro
-    await dbHelper.customQuery("""
-      DELETE FROM Exer_Macro WHERE CodMacro = ${widget.macroId}
-    """);
-
-    // Insert updated exercises for this macro
-    for (var exerciseId in macroExercises) {
+    try {
+      // Update macro quantity, reps per series, and reps per exercise
       await dbHelper.customQuery("""
-        INSERT INTO Exer_Macro (CodMacro, CodExer) VALUES (${widget.macroId}, $exerciseId)
+        UPDATE Macro 
+        SET Qtt = $quantity, RSerie = $rSerie, RExer = $rExer 
+        WHERE IdMacro = ${widget.macroId}
       """);
-    }
 
-    Navigator.pop(context); // Return to previous screen after saving changes
+      // Delete existing exercise links for the macro
+      await dbHelper.customQuery("""
+        DELETE FROM Exer_Macro WHERE CodMacro = ${widget.macroId}
+      """);
+
+      // Insert updated exercises for this macro
+      for (var exerciseId in macroExercises) {
+        await dbHelper.customQuery("""
+          INSERT INTO Exer_Macro (CodMacro, CodExer) VALUES (${widget.macroId}, $exerciseId)
+        """);
+      }
+
+      Navigator.pop(context); // Return to previous screen after saving changes
+    } catch (error) {
+      print('Error saving macro changes: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save changes. Please try again.')),
+      );
+    }
   }
 
   @override
@@ -117,46 +170,64 @@ class _EditMacroPageState extends State<EditMacroPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Quantity input
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator()) // Show loader while fetching data
+          : Column(
               children: [
-                const Text('Quantity: ', style: TextStyle(fontSize: 18)),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
+                // Display Macro-Level Details: Quantity, RSerie, RExer
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Quantity: $quantity', style: TextStyle(fontSize: 18)),
+                      SizedBox(height: 8),
+                      Text('RSerie: $rSerie', style: TextStyle(fontSize: 18)),
+                      SizedBox(height: 8),
+                      Text('RExer: $rExer', style: TextStyle(fontSize: 18)),
+                    ],
+                  ),
                 ),
-                Text(quantity.toString(), style: const TextStyle(fontSize: 18)),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => setState(() => quantity++),
+                const Divider(),
+
+                // Display grouped exercises with multiple sets (Peso, Rep)
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: exercises.length,
+                    itemBuilder: (context, index) {
+                      var exercise = exercises[index];
+                      return Card(
+                        margin: EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Exercise Name
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(exercise['exerciseName'], style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                            ),
+                            // Display sets (Peso and Rep)
+                            ...exercise['sets'].map<Widget>((set) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Peso: ${set['Peso']}kg', style: TextStyle(fontSize: 16)),
+                                    Text('Rep: ${set['Rep']} reps', style: TextStyle(fontSize: 16)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            const Divider(),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
-          ),
-          const Divider(),
-
-          // Exercise selection
-          Expanded(
-            child: ListView.builder(
-              itemCount: exercises.length,
-              itemBuilder: (context, index) {
-                var exercise = exercises[index];
-                bool isSelected = macroExercises.contains(exercise['id']);
-                return CheckboxListTile(
-                  title: Text(exercise['Name']),
-                  value: isSelected,
-                  onChanged: (value) => toggleExerciseSelection(exercise['id']),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

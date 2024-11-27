@@ -167,7 +167,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                 onPressed: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => EditMacroPage(macroId: int.parse(macro['IdMacro']))),
+                                    MaterialPageRoute(builder: (context) => EditMacroPage(macroId: macro['IdMacro'].toString())),
                                   );
                                 },
                               ),

@@ -542,7 +542,10 @@ class _MPageState extends State<MPage> {
                                             return ListTile(
                                               title: Text(
                                                 'Peso: ${weight['Peso']} kg, Reps: ${weight['Rep']}',
-                                                style: const TextStyle(color: secondaryColor),
+                                                style: const TextStyle(
+                                                  color: secondaryColor,
+                                                  fontSize: 14,
+                                                ),
                                               ),
                                             );
                                           }).toList(),

@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
 class EditMacroPage extends StatefulWidget {
@@ -160,8 +163,12 @@ class _EditMacroPageState extends State<EditMacroPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: secondaryColor),
         backgroundColor: Colors.black,
-        title: const Text('Edit Macro'),
+        title: const Text(
+          'Edit Macro',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
@@ -188,41 +195,50 @@ class _EditMacroPageState extends State<EditMacroPage> {
                     ],
                   ),
                 ),
-                const Divider(),
 
-                // Display grouped exercises with multiple sets (Peso, Rep)
                 Expanded(
                   child: ListView.builder(
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
                       var exercise = exercises[index];
                       return Card(
-                        margin: EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Exercise Name
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(exercise['exerciseName'], style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          color: accentColor1,
+                          margin: EdgeInsets.all(5),
+                          child: Padding(
+                            padding: EdgeInsets.all(5),
+                            child: ExpansionTile(
+                              title: Row(
+                                children: [
+                                  Text(
+                                    exercise['exerciseName'],
+                                    style: TextStyle(color: secondaryColor, fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  Spacer(),
+                                  IconButton(
+                                    onPressed: null,
+                                    icon: const Icon(Icons.edit, color: secondaryColor),
+                                  )
+                                ],
+                              ),
+                              iconColor: secondaryColor,
+                              collapsedIconColor: secondaryColor,
+                              children: [
+                                ...exercise['sets'].map<Widget>((set) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          'Weight: ${set['Peso']}kg,   Reps: ${set['Rep']}',
+                                          style: TextStyle(color: secondaryColor, fontSize: 14),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
                             ),
-                            // Display sets (Peso and Rep)
-                            ...exercise['sets'].map<Widget>((set) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('Peso: ${set['Peso']}kg', style: TextStyle(fontSize: 16)),
-                                    Text('Rep: ${set['Rep']} reps', style: TextStyle(fontSize: 16)),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                            const Divider(),
-                          ],
-                        ),
-                      );
+                          ));
                     },
                   ),
                 ),

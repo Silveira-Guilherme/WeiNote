@@ -37,7 +37,7 @@ class _EditMacroPageState extends State<EditMacroPage> {
     });
 
     try {
-      // Fetching macro details, including RSerie and RExer
+      // Fetching macro details
       final result = await dbHelper.customQuery("""
     SELECT 
       m.Qtt AS quantity, 
@@ -62,10 +62,7 @@ class _EditMacroPageState extends State<EditMacroPage> {
       m.IdMacro = ${widget.macroId}
     """);
 
-      print("fetchMacroDetails called");
-      print(result);
-
-      // Extract macro-level details: RSerie, RExer, and quantity
+      // Parse results and update state
       final macroQuantity = result.isNotEmpty ? result.first['quantity'] as int? : 1;
       final rSerie = result.isNotEmpty && result.first['RSerie'] != null ? result.first['RSerie'] as int : 0;
       final rExer = result.isNotEmpty && result.first['RExer'] != null ? result.first['RExer'] as int : 0;
@@ -81,7 +78,6 @@ class _EditMacroPageState extends State<EditMacroPage> {
           'exerciseName': row['exerciseName'] ?? '',
         };
 
-        // Grouping the exercises by their id
         if (groupedExercises.containsKey(exerciseId)) {
           groupedExercises[exerciseId]?.add(exerciseDetails);
         } else {
@@ -89,22 +85,22 @@ class _EditMacroPageState extends State<EditMacroPage> {
         }
       }
 
-      // Prepare a list for UI display, with grouped exercises and their respective details
+      // Prepare exercises for UI display
       List<Map<String, dynamic>> allExercises = [];
       groupedExercises.forEach((id, details) {
         allExercises.add({
           'id': id,
           'exerciseName': details.first['exerciseName'],
-          'sets': details, // Multiple Peso/Rep values for each exercise
+          'sets': details,
         });
       });
 
       setState(() {
-        quantity = macroQuantity ?? 1; // Default to 1 if null
-        this.rSerie = rSerie; // Set RSerie at the macro level
-        this.rExer = rExer; // Set RExer at the macro level
+        quantity = macroQuantity ?? 1;
+        this.rSerie = rSerie;
+        this.rExer = rExer;
         exercises = allExercises;
-        isLoading = false; // Done loading
+        isLoading = false;
       });
     } catch (error) {
       print('Error fetching macro details: $error');
@@ -112,45 +108,21 @@ class _EditMacroPageState extends State<EditMacroPage> {
         const SnackBar(content: Text('Failed to load data. Please try again later.')),
       );
       setState(() {
-        isLoading = false; // Stop loading even on error
+        isLoading = false;
       });
     }
   }
 
-  // Toggle exercise selection
-  void toggleExerciseSelection(int exerciseId) {
-    setState(() {
-      if (macroExercises.contains(exerciseId)) {
-        macroExercises.remove(exerciseId);
-      } else {
-        macroExercises.add(exerciseId);
-      }
-    });
-  }
-
-  // Save changes to macro's quantity and exercises
+  // Save changes to macro
   Future<void> saveMacroChanges() async {
     try {
-      // Update macro quantity, reps per series, and reps per exercise
       await dbHelper.customQuery("""
         UPDATE Macro 
         SET Qtt = $quantity, RSerie = $rSerie, RExer = $rExer 
         WHERE IdMacro = ${widget.macroId}
       """);
 
-      // Delete existing exercise links for the macro
-      await dbHelper.customQuery("""
-        DELETE FROM Exer_Macro WHERE CodMacro = ${widget.macroId}
-      """);
-
-      // Insert updated exercises for this macro
-      for (var exerciseId in macroExercises) {
-        await dbHelper.customQuery("""
-          INSERT INTO Exer_Macro (CodMacro, CodExer) VALUES (${widget.macroId}, $exerciseId)
-        """);
-      }
-
-      Navigator.pop(context); // Return to previous screen after saving changes
+      Navigator.pop(context);
     } catch (error) {
       print('Error saving macro changes: $error');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,67 +150,112 @@ class _EditMacroPageState extends State<EditMacroPage> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator()) // Show loader while fetching data
+          ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Display Macro-Level Details: Quantity, RSerie, RExer
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Quantity: $quantity', style: TextStyle(fontSize: 18)),
-                      SizedBox(height: 8),
-                      Text('RSerie: $rSerie', style: TextStyle(fontSize: 18)),
-                      SizedBox(height: 8),
-                      Text('RExer: $rExer', style: TextStyle(fontSize: 18)),
+                      // Editable Quantity
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Quantity: ', style: TextStyle(fontSize: 18)),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
+                              ),
+                              Text('$quantity', style: const TextStyle(fontSize: 18)),
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => setState(() => quantity++),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Editable RSerie
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Reps per Series (RSerie): ', style: TextStyle(fontSize: 18)),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: rSerie > 0 ? () => setState(() => rSerie--) : null,
+                              ),
+                              Text('$rSerie', style: const TextStyle(fontSize: 18)),
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => setState(() => rSerie++),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Editable RExer
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Reps per Exercise (RExer): ', style: TextStyle(fontSize: 18)),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: rExer > 0 ? () => setState(() => rExer--) : null,
+                              ),
+                              Text('$rExer', style: const TextStyle(fontSize: 18)),
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => setState(() => rExer++),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-
                 Expanded(
                   child: ListView.builder(
                     itemCount: exercises.length,
                     itemBuilder: (context, index) {
                       var exercise = exercises[index];
                       return Card(
-                          color: accentColor1,
-                          margin: EdgeInsets.all(5),
-                          child: Padding(
-                            padding: EdgeInsets.all(5),
-                            child: ExpansionTile(
-                              title: Row(
-                                children: [
-                                  Text(
-                                    exercise['exerciseName'],
-                                    style: TextStyle(color: secondaryColor, fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                  Spacer(),
-                                  IconButton(
-                                    onPressed: null,
-                                    icon: const Icon(Icons.edit, color: secondaryColor),
-                                  )
-                                ],
-                              ),
-                              iconColor: secondaryColor,
-                              collapsedIconColor: secondaryColor,
-                              children: [
-                                ...exercise['sets'].map<Widget>((set) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          'Weight: ${set['Peso']}kg,   Reps: ${set['Rep']}',
-                                          style: TextStyle(color: secondaryColor, fontSize: 14),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                              ],
+                        color: accentColor1,
+                        margin: const EdgeInsets.all(8),
+                        child: ExpansionTile(
+                          title: Text(
+                            exercise['exerciseName'],
+                            style: const TextStyle(
+                              color: secondaryColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ));
+                          ),
+                          iconColor: secondaryColor,
+                          children: [
+                            ...exercise['sets'].map<Widget>((set) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  'Weight: ${set['Peso']}kg,   Reps: ${set['Rep']}',
+                                  style: const TextStyle(color: secondaryColor, fontSize: 14),
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      );
                     },
                   ),
                 ),

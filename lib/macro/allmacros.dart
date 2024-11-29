@@ -45,7 +45,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
     ORDER BY 
       m.IdMacro, em.MacroOrder, s.IdSerie;
   """);
-
+    print(queryResult);
     // Group exercises by macro
     Map<int, List<Map<String, dynamic>>> groupedMacros = {};
 

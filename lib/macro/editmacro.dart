@@ -243,13 +243,23 @@ class _EditMacroPageState extends State<EditMacroPage> {
                             ),
                           ),
                           iconColor: secondaryColor,
+                          collapsedIconColor: secondaryColor,
                           children: [
                             ...exercise['sets'].map<Widget>((set) {
                               return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  'Weight: ${set['Peso']}kg,   Reps: ${set['Rep']}',
-                                  style: const TextStyle(color: secondaryColor, fontSize: 14),
+                                padding: const EdgeInsets.only(top: 8.0, bottom: 16.0, left: 16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      // Ensures the text spans the available space
+                                      child: Text(
+                                        'Weight: ${set['Peso']}kg,   Reps: ${set['Rep']}',
+                                        style: const TextStyle(color: secondaryColor, fontSize: 14),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             }).toList(),

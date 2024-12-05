@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gymdo/main.dart';
 import '../sql.dart';
 
 class EditTrainingPage extends StatefulWidget {
@@ -233,8 +234,15 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
             Wrap(
               spacing: 8.0,
               children: List.generate(_weekDays.length, (index) {
-                return ChoiceChip(
-                  label: Text(_weekDays[index]),
+                return FilterChip(
+                  selectedColor: accentColor2,
+                  disabledColor: secondaryColor,
+                  label: Text(
+                    _weekDays[index],
+                    style: TextStyle(
+                      color: primaryColor, // Conditional text color
+                    ),
+                  ),
                   selected: _selectedDays[index],
                   onSelected: (bool selected) {
                     setState(() {
@@ -256,23 +264,54 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                   // Check if the item is a macro
                   if (item['itemType'] == 'macro') {
                     return Card(
-                      child: ListTile(
-                        title: Text('Macro: ${item['IdMacro']} | Quantity: ${item['quantity']}'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Display all exercises under this macro
-                            for (var exerciseName in item['exercises'].keys)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Exercise: $exerciseName'),
-                                  Text('Peso: ${item['exercises'][exerciseName]['Peso'].join(', ')}'),
-                                  Text('Rep: ${item['exercises'][exerciseName]['Rep'].join(', ')}'),
-                                ],
-                              ),
-                          ],
+                      color: accentColor1,
+                      child: ExpansionTile(
+                        iconColor: secondaryColor,
+                        collapsedIconColor: secondaryColor,
+                        title: Text(
+                          'Macro: ${item['IdMacro']}',
+                          style: TextStyle(color: secondaryColor),
                         ),
+                        subtitle: Text(
+                          'Quantity: ${item['quantity']}',
+                          style: TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                        children: [
+                          // Display all exercises under this macro as their own ExpansionTile
+                          for (var exerciseName in item['exercises'].keys)
+                            ExpansionTile(
+                              iconColor: secondaryColor,
+                              collapsedIconColor: secondaryColor,
+                              title: Text(
+                                'Exercise: $exerciseName',
+                                style: TextStyle(color: secondaryColor),
+                              ),
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0, left: 16.0, bottom: 16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Use shrinkWrap and remove unnecessary inner Column
+                                      ListView.builder(
+                                        shrinkWrap: true, // Prevents ListView from taking infinite height
+                                        physics: NeverScrollableScrollPhysics(), // Disable scrolling inside ExpansionTile
+                                        itemCount: item['exercises'][exerciseName]['Peso'].length,
+                                        itemBuilder: (context, index3) {
+                                          return Text(
+                                            'Peso: ${item['exercises'][exerciseName]['Peso'][index3]}, Rep: ${item['exercises'][exerciseName]['Rep'][index3]}',
+                                            style: TextStyle(color: secondaryColor),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                        ],
                       ),
                     );
                   }
@@ -280,18 +319,37 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                   // Check if the item is an exercise
                   else if (item['itemType'] == 'exercise') {
                     return Card(
-                      child: ListTile(
-                        title: Text('Exercise: ${item['itemName']}'),
-                        subtitle: Column(
-                          children: [
-                            Text('Peso: ${item['pesoList'].join(', ')}'),
-                            Text('Rep: ${item['repsList'].join(', ')}'),
-                          ],
+                      color: accentColor1,
+                      child: ExpansionTile(
+                        iconColor: secondaryColor,
+                        collapsedIconColor: secondaryColor,
+                        title: Text(
+                          'Exercise: ${item['itemName']}',
+                          style: TextStyle(color: secondaryColor),
                         ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0, left: 16.0, bottom: 8),
+                            child: Column(
+                              children: [
+                                ListView.builder(
+                                  shrinkWrap: true, // Prevents the ListView from taking up infinite space
+                                  physics: NeverScrollableScrollPhysics(), // Disables scrolling if it's inside a Column
+                                  itemCount: item['pesoList'].length,
+                                  itemBuilder: (context, index2) {
+                                    return Text(
+                                      'Peso: ${item['pesoList'][index2]}, Rep: ${item['repsList'][index2]}',
+                                      style: TextStyle(color: secondaryColor),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
                       ),
                     );
                   }
-
                   return Container(); // Fallback
                 },
               ),

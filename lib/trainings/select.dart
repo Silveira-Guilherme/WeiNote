@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:gymdo/main.dart'; // Ensure this is correctly importing your colors
+import 'package:gymdo/main.dart';
 import 'package:gymdo/trainings/create.dart';
 import 'package:gymdo/trainings/trainingdetails.dart';
 import '/../sql.dart'; // Import your database helper
@@ -9,7 +9,6 @@ class TrainingListPage extends StatefulWidget {
   const TrainingListPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _TrainingListPageState createState() => _TrainingListPageState();
 }
 
@@ -17,6 +16,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> trainings = [];
   bool isLoading = true;
+  bool isDeleteMode = false; // Toggle for delete mode
 
   // Fetch all trainings from the database
   Future<void> fetchTrainings() async {
@@ -27,27 +27,37 @@ class _TrainingListPageState extends State<TrainingListPage> {
     });
   }
 
+  // Delete a training from the database
+  Future<void> deleteTraining(int trainingId) async {
+    await dbHelper.customQuery("DELETE FROM Tr WHERE IdTr = $trainingId");
+    fetchTrainings(); // Refresh the list after deletion
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Training with ID $trainingId deleted.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    fetchTrainings(); // Load trainings when the page is initialized
+    fetchTrainings();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70.0), // Adjust the height of the AppBar
+        preferredSize: const Size.fromHeight(70.0),
         child: AppBar(
           backgroundColor: primaryColor,
-          iconTheme: const IconThemeData(
-            color: secondaryColor, // Change the back button color to white
-          ),
-          title: const Text(
-            'All Trainings',
+          iconTheme: const IconThemeData(color: secondaryColor),
+          title: Text(
+            isDeleteMode ? 'Delete Mode' : 'All Trainings',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 24.0, // Adjust the font size
+              fontSize: 24.0,
               color: secondaryColor,
             ),
           ),
@@ -64,48 +74,80 @@ class _TrainingListPageState extends State<TrainingListPage> {
                     var training = trainings[index];
                     return Card(
                       margin: const EdgeInsets.all(10),
-                      color: accentColor1, // Ensure this color is defined in your main.dart
+                      color: accentColor1,
                       elevation: 5,
                       child: InkWell(
-                        // Use InkWell for touch feedback
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TrainingDetailsPage(
-                                trainingId: training['IdTr'], // Use training['IdTr'] here
+                          if (!isDeleteMode) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TrainingDetailsPage(
+                                  trainingId: training['IdTr'],
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between text and icon
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Training name text
                               Text(
                                 training['Name'] ?? 'Unnamed Training',
                                 style: const TextStyle(
-                                  color: secondaryColor, // Ensure this color is defined in your main.dart
-                                  fontSize: 20, // Increase font size for better visibility
+                                  color: secondaryColor,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              // Eye icon
-                              IconButton(
-                                icon: const Icon(Icons.remove_red_eye, color: secondaryColor),
-                                onPressed: () {
-                                  // Navigate to TrainingDetailsPage when the icon is pressed
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TrainingDetailsPage(
-                                        trainingId: training['IdTr'],
-                                      ),
+                              Row(
+                                children: [
+                                  if (isDeleteMode)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        // Show confirmation SnackBar
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Text('Confirm delete?'),
+                                                const Spacer(),
+                                                TextButton(
+                                                  child: const Text(
+                                                    'DELETE',
+                                                    style: TextStyle(color: Colors.red),
+                                                  ),
+                                                  onPressed: () {
+                                                    deleteTraining(training['IdTr']);
+                                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                            duration: const Duration(seconds: 5),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_red_eye, color: secondaryColor),
+                                    onPressed: () {
+                                      if (!isDeleteMode) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => TrainingDetailsPage(
+                                              trainingId: training['IdTr'],
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -122,9 +164,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
         spacing: 12,
         children: [
           SpeedDialChild(
-            child: const Icon(
-              Icons.add,
-            ),
+            child: const Icon(Icons.add),
             label: 'Add Training',
             foregroundColor: secondaryColor,
             backgroundColor: accentColor2,
@@ -136,18 +176,15 @@ class _TrainingListPageState extends State<TrainingListPage> {
             },
           ),
           SpeedDialChild(
-            child: const Icon(Icons.edit),
-            label: 'Edit',
+            child: const Icon(Icons.delete),
+            label: isDeleteMode ? 'Disable Delete Mode' : 'Enable Delete Mode',
             foregroundColor: secondaryColor,
             backgroundColor: primaryColor,
-            onTap: () {},
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.visibility),
-            label: 'See All Trainings',
-            foregroundColor: secondaryColor,
-            backgroundColor: primaryColor,
-            onTap: () {},
+            onTap: () {
+              setState(() {
+                isDeleteMode = !isDeleteMode;
+              });
+            },
           ),
         ],
       ),

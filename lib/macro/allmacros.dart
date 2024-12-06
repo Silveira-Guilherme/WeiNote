@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/macro/createmacro.dart';
 import 'package:gymdo/macro/editmacro.dart';
 import 'package:gymdo/main.dart';
@@ -15,6 +16,8 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> macros = [];
   List<bool> expandedList = [];
+  bool isDeleteMode = false; // Toggle for delete mode
+  Set<int> selectedMacros = {}; // Track selected macro IDs
 
   @override
   void initState() {
@@ -22,7 +25,6 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
     fetchMacros();
   }
 
-  // Fetch macros and their exercises
   Future<void> fetchMacros() async {
     List<Map<String, dynamic>> queryResult = await dbHelper.customQuery("""
     SELECT 
@@ -45,8 +47,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
     ORDER BY 
       m.IdMacro, em.MacroOrder, s.IdSerie;
   """);
-    print(queryResult);
-    // Group exercises by macro
+
     Map<int, List<Map<String, dynamic>>> groupedMacros = {};
 
     for (var row in queryResult) {
@@ -80,7 +81,6 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
       }
     }
 
-    // Format the final list of macros
     List<Map<String, dynamic>> formattedMacros = [];
     for (var macroId in groupedMacros.keys) {
       var firstRow = queryResult.firstWhere((row) => row['IdMacro'] == macroId);
@@ -95,25 +95,47 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
 
     setState(() {
       macros = formattedMacros;
-      expandedList = List.generate(macros.length, (index) => false); // Initialize expandedList
+      expandedList = List.generate(macros.length, (index) => false);
     });
   }
 
-  // Toggle expanded state for macro details
   void toggleExpanded(int index) {
     setState(() {
       expandedList[index] = !expandedList[index];
     });
   }
 
+  void toggleSelection(int macroId) {
+    setState(() {
+      if (selectedMacros.contains(macroId)) {
+        selectedMacros.remove(macroId);
+      } else {
+        selectedMacros.add(macroId);
+      }
+    });
+  }
+
+  Future<void> deleteSelectedMacros(int macroId) async {
+    for (int macroId in selectedMacros) {
+      await dbHelper.customQuery("DELETE FROM Tr_Macro WHERE CodMacro = $macroId");
+      await dbHelper.customQuery("DELETE FROM Exer_Macro WHERE CodMacro = $macroId");
+      await dbHelper.customQuery("DELETE FROM Macro WHERE IdMacro = $macroId");
+    }
+    setState(() {
+      isDeleteMode = false;
+      selectedMacros.clear();
+    });
+    fetchMacros();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        iconTheme: const IconThemeData(color: secondaryColor), // Change the back button color to white
+        iconTheme: const IconThemeData(color: secondaryColor),
         backgroundColor: Colors.black,
-        title: const Text(
-          'All Circuits',
+        title: Text(
+          isDeleteMode ? 'Delete Mode' : 'All Circuits',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -135,7 +157,6 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
                       children: [
-                        // This is the top ExpansionTile for each macro
                         ExpansionTile(
                           title: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,16 +182,27 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                   ),
                                 ],
                               ),
-                              Spacer(), // This pushes the edit icon to the far right
+                              const Spacer(),
+                              // Edit Icon
+                              if (isDeleteMode)
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => deleteSelectedMacros(macro['IdMacro']),
+                                ),
                               IconButton(
                                 icon: const Icon(Icons.edit, color: secondaryColor),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => EditMacroPage(macroId: macro['IdMacro'].toString())),
+                                    MaterialPageRoute(
+                                      builder: (context) => EditMacroPage(
+                                        macroId: macro['IdMacro'].toString(),
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
+                              // Conditionally show Delete Icon based on delete mode
                             ],
                           ),
                           iconColor: secondaryColor,
@@ -181,7 +213,10 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                     padding: EdgeInsets.all(8.0),
                                     child: Text(
                                       'No exercises in this macro',
-                                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ),
                                 ]
@@ -191,7 +226,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                   return ExpansionTile(
                                     title: Text(
                                       exercise['ExerciseName'],
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: secondaryColor,
                                         fontSize: 16,
                                       ),
@@ -204,7 +239,10 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                               padding: EdgeInsets.all(8.0),
                                               child: Text(
                                                 'No sets available',
-                                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey,
+                                                ),
                                               ),
                                             ),
                                           ]
@@ -234,20 +272,41 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreateMacroPage(),
-            ),
-          ).then((_) {
-            fetchMacros(); // Refresh the list after adding a new macro
-          });
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        backgroundColor: primaryColor,
+        foregroundColor: secondaryColor,
+        overlayOpacity: 0.5,
+        spacing: 12,
+        children: [
+          SpeedDialChild(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            label: 'Add Circuit',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateMacroPage(),
+                ),
+              ).then((_) {
+                fetchMacros(); // Refresh the list after adding a new macro
+              });
+            },
+            child: const Icon(Icons.add),
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.delete),
+            label: isDeleteMode ? 'Disable Delete Mode' : 'Enable Delete Mode',
+            foregroundColor: secondaryColor,
+            backgroundColor: primaryColor,
+            onTap: () {
+              setState(() {
+                isDeleteMode = !isDeleteMode;
+              });
+            },
+          ),
+        ],
       ),
     );
   }

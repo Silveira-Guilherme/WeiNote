@@ -16,7 +16,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
   late TextEditingController _nameController;
   late TextEditingController _typeController;
 
-  final List<String> _weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  final List<String> trainingDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   List<bool> _selectedDays = List.generate(7, (_) => false);
   List<Map<String, dynamic>> _exercisesAndMacros = [];
@@ -160,7 +160,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
 
         // Setting selected days based on fetched data
         _selectedDays = List.generate(7, (index) {
-          return daysResult.any((day) => day['Day'] == _weekDays[index]);
+          return daysResult.any((day) => day['Day'] == trainingDays[index]);
         });
 
         _exercisesAndMacros = combinedItems; // This will hold both exercises and macros
@@ -233,14 +233,12 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
             const Text('Training Days', style: TextStyle(fontWeight: FontWeight.bold)),
             Wrap(
               spacing: 8.0,
-              children: List.generate(_weekDays.length, (index) {
-                return FilterChip(
-                  selectedColor: accentColor2,
-                  disabledColor: secondaryColor,
+              children: List.generate(trainingDays.length, (index) {
+                return ChoiceChip(
                   label: Text(
-                    _weekDays[index],
+                    trainingDays[index],
                     style: TextStyle(
-                      color: primaryColor, // Conditional text color
+                      color: _selectedDays[index] ? secondaryColor : primaryColor, // White for selected, black for unselected
                     ),
                   ),
                   selected: _selectedDays[index],
@@ -249,9 +247,13 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                       _selectedDays[index] = selected;
                     });
                   },
+                  selectedColor: primaryColor, // Background for selected chips
+                  backgroundColor: secondaryColor, // Background for unselected chips
+                  checkmarkColor: secondaryColor, // Explicitly setting the checkmark color to white
                 );
               }),
             ),
+
             const SizedBox(height: 16),
 
             // Exercises and Macros

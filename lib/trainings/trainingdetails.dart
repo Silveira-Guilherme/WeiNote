@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/exercises/selectexec.dart';
 import 'package:gymdo/main.dart';
+import 'package:gymdo/trainings/edit.dart';
 import '/../sql.dart';
 
 class TrainingDetailsPage extends StatefulWidget {
   final int trainingId;
+  final VoidCallback onSave;
 
-  const TrainingDetailsPage({super.key, required this.trainingId});
+  const TrainingDetailsPage({super.key, required this.trainingId, required this.onSave});
 
   @override
   _TrainingDetailsPageState createState() => _TrainingDetailsPageState();
@@ -166,140 +168,188 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70.0),
-        child: AppBar(
-          backgroundColor: primaryColor,
-          iconTheme: const IconThemeData(color: secondaryColor),
-          title: const Text(
-            'Training Details',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 24.0,
-              color: secondaryColor,
+    return WillPopScope(
+        onWillPop: () async {
+          widget.onSave(); // Call the onSave function
+          return true; // Allow the page to be popped
+        },
+        child: Scaffold(
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(70.0),
+            child: AppBar(
+              backgroundColor: primaryColor,
+              iconTheme: const IconThemeData(color: secondaryColor),
+              title: const Text(
+                'Training Details',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24.0,
+                  color: secondaryColor,
+                ),
+              ),
+              centerTitle: true,
             ),
           ),
-          centerTitle: true,
-        ),
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      trainingName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                        color: primaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Type: $trainingType',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: primaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Training Days:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8.0,
-                      children: trainingDays.isNotEmpty
-                          ? trainingDays
-                              .map((day) => Chip(
-                                    label: Text(
-                                      day,
-                                      style: TextStyle(color: secondaryColor),
-                                    ),
-                                    backgroundColor: primaryColor,
-                                    labelStyle: const TextStyle(fontWeight: FontWeight.w500),
-                                  ))
-                              .toList()
-                          : [
-                              const Text(
-                                'No days selected',
-                                style: TextStyle(color: primaryColor),
-                              )
-                            ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Exercises & Circuits:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    items.isNotEmpty
-                        ? ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              var item = items[index];
-                              bool isMacro = item['itemType'] == 'macro';
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          trainingName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            color: primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Type: $trainingType',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Training Days:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8.0,
+                          children: trainingDays.isNotEmpty
+                              ? trainingDays
+                                  .map((day) => Chip(
+                                        label: Text(
+                                          day,
+                                          style: TextStyle(color: secondaryColor),
+                                        ),
+                                        backgroundColor: primaryColor,
+                                        labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+                                      ))
+                                  .toList()
+                              : [
+                                  const Text(
+                                    'No days selected',
+                                    style: TextStyle(color: primaryColor),
+                                  )
+                                ],
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Exercises & Circuits:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        items.isNotEmpty
+                            ? ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: items.length,
+                                itemBuilder: (context, index) {
+                                  var item = items[index];
+                                  bool isMacro = item['itemType'] == 'macro';
 
-                              // Card for each item
-                              return Card(
-                                margin: const EdgeInsets.all(3.0),
-                                color: accentColor1,
-                                elevation: 5,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(3.0),
-                                  child: isMacro
-                                      // Macro logic: Display exercises within the macro
-                                      ? ExpansionTile(
-                                          iconColor: secondaryColor,
-                                          collapsedIconColor: secondaryColor,
-                                          title: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                'Macro: ${item['quantity']}x - Exercises',
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: secondaryColor,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.edit, color: secondaryColor),
-                                                onPressed: () {},
-                                              ),
-                                            ],
-                                          ),
-                                          children: item['exercises'] != null
-                                              ? item['exercises'].entries.map<Widget>((entry) {
-                                                  String exerciseName = entry.key;
-                                                  List<dynamic> pesoList = entry.value['Peso'];
-                                                  List<dynamic> repList = entry.value['Rep'];
-
-                                                  return ExpansionTile(
-                                                    iconColor: secondaryColor,
-                                                    collapsedIconColor: secondaryColor,
-                                                    title: Text(
-                                                      exerciseName,
-                                                      style: const TextStyle(fontSize: 16, color: secondaryColor),
+                                  // Card for each item
+                                  return Card(
+                                    margin: const EdgeInsets.all(3.0),
+                                    color: accentColor1,
+                                    elevation: 5,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3.0),
+                                      child: isMacro
+                                          // Macro logic: Display exercises within the macro
+                                          ? ExpansionTile(
+                                              iconColor: secondaryColor,
+                                              collapsedIconColor: secondaryColor,
+                                              title: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    'Macro: ${item['quantity']}x - Exercises',
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: secondaryColor,
                                                     ),
-                                                    children: List.generate(pesoList.length, (setIndex) {
-                                                      String peso = pesoList[setIndex].toString();
-                                                      String rep = repList[setIndex].toString();
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.edit, color: secondaryColor),
+                                                    onPressed: () {},
+                                                  ),
+                                                ],
+                                              ),
+                                              children: item['exercises'] != null
+                                                  ? item['exercises'].entries.map<Widget>((entry) {
+                                                      String exerciseName = entry.key;
+                                                      List<dynamic> pesoList = entry.value['Peso'];
+                                                      List<dynamic> repList = entry.value['Rep'];
+
+                                                      return ExpansionTile(
+                                                        iconColor: secondaryColor,
+                                                        collapsedIconColor: secondaryColor,
+                                                        title: Text(
+                                                          exerciseName,
+                                                          style: const TextStyle(fontSize: 16, color: secondaryColor),
+                                                        ),
+                                                        children: List.generate(pesoList.length, (setIndex) {
+                                                          String peso = pesoList[setIndex].toString();
+                                                          String rep = repList[setIndex].toString();
+
+                                                          return Padding(
+                                                            padding: const EdgeInsets.all(8.0),
+                                                            child: Text(
+                                                              'Set ${setIndex + 1}: Peso: $peso kg, Reps: $rep',
+                                                              style: const TextStyle(fontSize: 14, color: secondaryColor),
+                                                            ),
+                                                          );
+                                                        }),
+                                                      );
+                                                    }).toList()
+                                                  : [
+                                                      const Text(
+                                                        'No exercises for this macro',
+                                                        style: TextStyle(color: Colors.black54),
+                                                      ),
+                                                    ],
+                                            )
+                                          // Exercise logic: Display sets with `peso` and `reps`
+                                          : ExpansionTile(
+                                              iconColor: secondaryColor,
+                                              collapsedIconColor: secondaryColor,
+                                              title: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    item['itemName'],
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: secondaryColor,
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.edit, color: secondaryColor),
+                                                    onPressed: () {},
+                                                  ),
+                                                ],
+                                              ),
+                                              children: item['pesoList'].isNotEmpty && item['repsList'].isNotEmpty
+                                                  ? List.generate(item['pesoList'].length, (setIndex) {
+                                                      String peso = item['pesoList'][setIndex];
+                                                      String rep = item['repsList'][setIndex];
 
                                                       return Padding(
                                                         padding: const EdgeInsets.all(8.0),
@@ -308,115 +358,72 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                                                           style: const TextStyle(fontSize: 14, color: secondaryColor),
                                                         ),
                                                       );
-                                                    }),
-                                                  );
-                                                }).toList()
-                                              : [
-                                                  const Text(
-                                                    'No exercises for this macro',
-                                                    style: TextStyle(color: Colors.black54),
-                                                  ),
-                                                ],
-                                        )
-                                      // Exercise logic: Display sets with `peso` and `reps`
-                                      : ExpansionTile(
-                                          iconColor: secondaryColor,
-                                          collapsedIconColor: secondaryColor,
-                                          title: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                item['itemName'],
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: secondaryColor,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.edit, color: secondaryColor),
-                                                onPressed: () {},
-                                              ),
-                                            ],
-                                          ),
-                                          children: item['pesoList'].isNotEmpty && item['repsList'].isNotEmpty
-                                              ? List.generate(item['pesoList'].length, (setIndex) {
-                                                  String peso = item['pesoList'][setIndex];
-                                                  String rep = item['repsList'][setIndex];
-
-                                                  return Padding(
-                                                    padding: const EdgeInsets.all(8.0),
-                                                    child: Text(
-                                                      'Set ${setIndex + 1}: Peso: $peso kg, Reps: $rep',
-                                                      style: const TextStyle(fontSize: 14, color: secondaryColor),
-                                                    ),
-                                                  );
-                                                })
-                                              : [
-                                                  const Padding(
-                                                    padding: EdgeInsets.all(8.0),
-                                                    child: Text(
-                                                      'No sets available for this exercise',
-                                                      style: TextStyle(color: Colors.black54),
-                                                    ),
-                                                  ),
-                                                ],
-                                        ),
-                                ),
-                              );
-                            },
-                          )
-                        : const Text(
-                            'No exercises or circuits associated with this training.',
-                            style: TextStyle(color: Colors.black54),
-                          ),
-                  ],
-                ),
-              ),
-            ),
-      floatingActionButton: SpeedDial(
-        animatedIcon: AnimatedIcons.menu_close,
-        backgroundColor: primaryColor,
-        foregroundColor: secondaryColor,
-        overlayOpacity: 0.3,
-        spacing: 12,
-        children: [
-          SpeedDialChild(
-            child: const Icon(Icons.add),
-            label: 'Add Exercises',
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.deepPurple,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ExerciseListPage(
-                    trainingId: widget.trainingId,
+                                                    })
+                                                  : [
+                                                      const Padding(
+                                                        padding: EdgeInsets.all(8.0),
+                                                        child: Text(
+                                                          'No sets available for this exercise',
+                                                          style: TextStyle(color: Colors.black54),
+                                                        ),
+                                                      ),
+                                                    ],
+                                            ),
+                                    ),
+                                  );
+                                },
+                              )
+                            : const Text(
+                                'No exercises or circuits associated with this training.',
+                                style: TextStyle(color: Colors.black54),
+                              ),
+                      ],
+                    ),
                   ),
                 ),
-              );
-            },
+          floatingActionButton: SpeedDial(
+            animatedIcon: AnimatedIcons.menu_close,
+            backgroundColor: primaryColor,
+            foregroundColor: secondaryColor,
+            overlayOpacity: 0.3,
+            spacing: 12,
+            children: [
+              SpeedDialChild(
+                child: const Icon(Icons.add),
+                label: 'Add Exercises',
+                foregroundColor: secondaryColor,
+                backgroundColor: accentColor2,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExerciseListPage(
+                        trainingId: widget.trainingId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              SpeedDialChild(
+                child: const Icon(Icons.edit),
+                label: 'Edit Training',
+                foregroundColor: secondaryColor,
+                backgroundColor: primaryColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditTrainingPage(
+                        trainingId: widget.trainingId,
+                        onSave: fetchTrainingDetails,
+                      ),
+                    ),
+                  );
+                  // Implement Edit Training logic here
+                },
+              ),
+            ],
           ),
-          SpeedDialChild(
-            child: const Icon(Icons.edit),
-            label: 'Edit Training',
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.teal,
-            onTap: () {
-              // Implement Edit Training logic here
-            },
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.visibility),
-            label: 'All Trainings',
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.blueAccent,
-            onTap: () {
-              // Implement view all trainings logic here
-            },
-          ),
-        ],
-      ),
-    );
+        ));
   }
 }

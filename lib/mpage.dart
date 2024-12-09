@@ -696,7 +696,10 @@ class _MPageState extends State<MPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => TrainingListPage()),
+                    MaterialPageRoute(
+                        builder: (context) => TrainingListPage(
+                              onSave: initInfo,
+                            )),
                   );
                 },
               ),

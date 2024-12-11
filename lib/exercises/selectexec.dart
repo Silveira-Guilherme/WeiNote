@@ -4,8 +4,9 @@ import '/../sql.dart';
 
 class ExerciseListPage extends StatefulWidget {
   final int trainingId;
+  final VoidCallback onSave; // Callback to trigger on save
 
-  const ExerciseListPage({Key? key, required this.trainingId}) : super(key: key);
+  const ExerciseListPage({Key? key, required this.trainingId, required this.onSave}) : super(key: key);
 
   @override
   _ExerciseListPageState createState() => _ExerciseListPageState();
@@ -283,7 +284,9 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => CreateExercisePage(),
+              builder: (context) => CreateExercisePage(
+                onSave: fetchItems,
+              ),
             ),
           );
         },

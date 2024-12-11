@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '/../sql.dart';
 
 class CreateMacroPage extends StatefulWidget {
-  const CreateMacroPage({Key? key}) : super(key: key);
+  final VoidCallback onSave;
+  const CreateMacroPage({Key? key, required this.onSave}) : super(key: key);
 
   @override
   _CreateMacroPageState createState() => _CreateMacroPageState();

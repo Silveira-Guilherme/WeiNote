@@ -25,8 +25,7 @@ class _CPageState extends State<CPage> {
     'Saturday',
     'Sunday',
   ];
-  List<bool> selectedDays =
-      List.generate(7, (index) => false); // 7 days initialized to false
+  List<bool> selectedDays = List.generate(7, (index) => false); // 7 days initialized to false
 
   bool isLoading = false;
 
@@ -53,8 +52,7 @@ class _CPageState extends State<CPage> {
     for (int i = 0; i < selectedDays.length; i++) {
       if (selectedDays[i]) {
         // Convert weekday names to corresponding IDs (1-7 for Mon-Sun)
-        selectedWeekDays
-            .add(i + 1); // Assuming 1 = Segunda-feira, ..., 7 = Domingo
+        selectedWeekDays.add(i + 1); // Assuming 1 = Segunda-feira, ..., 7 = Domingo
       }
     }
 
@@ -81,8 +79,7 @@ class _CPageState extends State<CPage> {
       trainingNameController.clear();
       trainingTypeController.clear();
       setState(() {
-        selectedDays.fillRange(
-            0, selectedDays.length, false); // Reset selection
+        selectedDays.fillRange(0, selectedDays.length, false); // Reset selection
       });
 
       return trainingId; // Return the newly created training ID
@@ -95,8 +92,7 @@ class _CPageState extends State<CPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize:
-            const Size.fromHeight(70.0), // Adjust the height of the AppBar
+        preferredSize: const Size.fromHeight(70.0), // Adjust the height of the AppBar
         child: AppBar(
           backgroundColor: Colors.black,
           iconTheme: const IconThemeData(
@@ -144,16 +140,13 @@ class _CPageState extends State<CPage> {
               children: List.generate(weekDays.length, (index) {
                 return ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        selectedDays[index] ? Colors.black : Colors.white,
+                    backgroundColor: selectedDays[index] ? Colors.black : Colors.white,
                     // Setting the text color based on the button's selected state
-                    foregroundColor:
-                        selectedDays[index] ? Colors.white : Colors.black,
+                    foregroundColor: selectedDays[index] ? Colors.white : Colors.black,
                   ),
                   onPressed: () {
                     setState(() {
-                      selectedDays[index] =
-                          !selectedDays[index]; // Toggle selection
+                      selectedDays[index] = !selectedDays[index]; // Toggle selection
                     });
                   },
                   child: Text(weekDays[index]),
@@ -175,6 +168,7 @@ class _CPageState extends State<CPage> {
               context,
               MaterialPageRoute(
                   builder: (context) => ExerciseListPage(
+                        onSave: initState,
                         trainingId: trainingId,
                       )),
             );

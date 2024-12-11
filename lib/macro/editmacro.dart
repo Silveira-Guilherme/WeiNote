@@ -5,9 +5,10 @@ import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
 class EditMacroPage extends StatefulWidget {
+  final VoidCallback onSave;
   final String macroId;
 
-  const EditMacroPage({Key? key, required this.macroId}) : super(key: key);
+  const EditMacroPage({Key? key, required this.macroId, required this.onSave}) : super(key: key);
 
   @override
   _EditMacroPageState createState() => _EditMacroPageState();

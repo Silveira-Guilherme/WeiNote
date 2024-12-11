@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/exercises/createexec.dart';
 import 'package:gymdo/exercises/editexec.dart';
 import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
 class AllExercisesPage extends StatefulWidget {
-  const AllExercisesPage({Key? key}) : super(key: key);
+  final VoidCallback onSave;
+
+  const AllExercisesPage({Key? key, required this.onSave}) : super(key: key);
 
   @override
   _AllExercisesPageState createState() => _AllExercisesPageState();
@@ -15,6 +18,7 @@ class _AllExercisesPageState extends State<AllExercisesPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> exercises = [];
   List<bool> expandedList = [];
+  bool deleteMode = false; // Toggle delete mode
 
   @override
   void initState() {
@@ -22,20 +26,26 @@ class _AllExercisesPageState extends State<AllExercisesPage> {
     fetchExercises();
   }
 
-  // Fetch exercises with their respective weights and repetitions from the database
+  // Fetch exercises from the database
   Future<void> fetchExercises() async {
     List<Map<String, dynamic>> queryResult = await dbHelper.customQuery("""
       SELECT e.IdExer, e.Name, GROUP_CONCAT(s.Peso) AS Pesos, GROUP_CONCAT(s.Rep) AS Reps
       FROM Exer e 
       LEFT JOIN Serie s ON e.IdExer = s.CodExer
       GROUP BY e.IdExer
-      """);
+    """);
 
     setState(() {
       exercises = queryResult;
-      print(exercises);
       expandedList = List.generate(exercises.length, (index) => false);
     });
+  }
+
+  // Delete a single exercise
+  Future<void> deleteExercise(int exerciseId) async {
+    await dbHelper.customQuery("DELETE FROM Exer WHERE IdExer = $exerciseId");
+    await dbHelper.customQuery("DELETE FROM Exer_Macro WHERE CodExer = $exerciseId");
+    fetchExercises(); // Refresh the list
   }
 
   // Toggle expanded state for exercise details
@@ -75,32 +85,67 @@ class _AllExercisesPageState extends State<AllExercisesPage> {
                   child: Padding(
                     padding: const EdgeInsets.all(3.0),
                     child: ExpansionTile(
-                      title: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                        Text(
-                          exercise['Name'] ?? 'Exercise',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            color: secondaryColor,
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            exercise['Name'] ?? 'Exercise',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: secondaryColor,
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: secondaryColor),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => EditExercisePage(
-                                  exerciseId: exercise['IdExer'],
-                                  onSave: () {
-                                    fetchExercises();
+                          Row(
+                            children: [
+                              if (deleteMode)
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text("Confirm Deletion"),
+                                        content: const Text("Are you sure you want to delete this exercise?"),
+                                        actions: [
+                                          TextButton(
+                                            child: const Text("Cancel"),
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                          ),
+                                          TextButton(
+                                            child: const Text("Delete"),
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                              deleteExercise(exercise['IdExer']);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
                                   },
                                 ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: secondaryColor),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditExercisePage(
+                                        exerciseId: exercise['IdExer'],
+                                        onSave: () {
+                                          fetchExercises();
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
-                      ]),
+                            ],
+                          ),
+                        ],
+                      ),
                       iconColor: secondaryColor,
                       collapsedIconColor: secondaryColor,
                       onExpansionChanged: (expanded) {
@@ -119,7 +164,6 @@ class _AllExercisesPageState extends State<AllExercisesPage> {
                           : List.generate(pesos.length, (i) {
                               String peso = pesos[i];
                               String rep = reps[i];
-                              //print(rep);
                               return Padding(
                                 padding: const EdgeInsets.all(5.0),
                                 child: Text(
@@ -133,20 +177,47 @@ class _AllExercisesPageState extends State<AllExercisesPage> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreateExercisePage(),
+        overlayColor: secondaryColor,
+        overlayOpacity: 0.7,
+        children: [
+          SpeedDialChild(
+            child: const Icon(
+              Icons.add,
+              color: secondaryColor,
             ),
-          ).then((_) {
-            fetchExercises(); // Refresh the list after adding a new exercise
-          });
-        },
-        child: const Icon(Icons.add),
+            label: "Add Exercise",
+            backgroundColor: accentColor2,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateExercisePage(
+                    onSave: fetchExercises,
+                  ),
+                ),
+              ).then((_) {
+                fetchExercises(); // Refresh the list after adding a new exercise
+              });
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(
+              Icons.delete,
+              color: secondaryColor,
+            ),
+            label: deleteMode ? "Exit Delete Mode" : "Enter Delete Mode",
+            backgroundColor: primaryColor,
+            onTap: () {
+              setState(() {
+                deleteMode = !deleteMode;
+              });
+            },
+          ),
+        ],
       ),
     );
   }

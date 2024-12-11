@@ -398,6 +398,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ExerciseListPage(
+                        onSave: fetchTrainingDetails,
                         trainingId: widget.trainingId,
                       ),
                     ),

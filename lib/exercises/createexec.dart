@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '/../sql.dart'; // Ensure this points to your database helper
 
 class CreateExercisePage extends StatefulWidget {
+  final VoidCallback onSave; // Callback to notify parent widget about changes
+
+  const CreateExercisePage({Key? key, required this.onSave}) : super(key: key);
+
   @override
   _CreateExercisePageState createState() => _CreateExercisePageState();
 }
@@ -31,15 +35,11 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
 
     try {
       // Insert the new exercise into the database
-      await dbHelper
-          .customQuery("INSERT INTO Exer (Name) VALUES ('$exerciseName')");
+      await dbHelper.customQuery("INSERT INTO Exer (Name) VALUES ('$exerciseName')");
 
       // Retrieve the last inserted exercise ID
-      List<Map<String, dynamic>> exerciseIdResult =
-          await dbHelper.customQuery("SELECT last_insert_rowid() AS id");
-      int id = exerciseIdResult.isNotEmpty
-          ? exerciseIdResult[0]['id']
-          : 0; // Get the ID from the result
+      List<Map<String, dynamic>> exerciseIdResult = await dbHelper.customQuery("SELECT last_insert_rowid() AS id");
+      int id = exerciseIdResult.isNotEmpty ? exerciseIdResult[0]['id'] : 0; // Get the ID from the result
 
       // Insert each series into the database
       for (int i = 0; i < pesoControllers.length; i++) {
@@ -47,23 +47,19 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
         String rep = repControllers[i].text;
 
         if (peso.isNotEmpty && rep.isNotEmpty) {
-          await dbHelper.customQuery(
-              "INSERT INTO Serie (Peso, Rep, CodExer) VALUES ($peso, $rep, $id)");
+          await dbHelper.customQuery("INSERT INTO Serie (Peso, Rep, CodExer) VALUES ($peso, $rep, $id)");
         }
       }
 
-      // Clear the input fields after submission
-      exerciseNameController.clear();
-      for (var controller in pesoControllers) {
-        controller.clear();
-      }
-      for (var controller in repControllers) {
-        controller.clear();
-      }
+      // Notify parent widget that the exercise has been saved
+      widget.onSave();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Exercise created successfully.')),
       );
+
+      // Navigate back to the previous page
+      Navigator.pop(context);
     } catch (error) {
       // Handle any error that may occur during database operations
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,9 +70,6 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
       setState(() {
         isLoading = false;
       });
-
-      // Navigate back to the previous page
-      Navigator.pop(context);
     }
   }
 
@@ -167,9 +160,7 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
               ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Create Exercise'),
+              child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Create Exercise'),
             ),
           ],
         ),

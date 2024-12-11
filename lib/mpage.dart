@@ -672,7 +672,10 @@ class _MPageState extends State<MPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AllExercisesPage()),
+                    MaterialPageRoute(
+                        builder: (context) => AllExercisesPage(
+                              onSave: initInfo,
+                            )),
                   );
                 },
               ),
@@ -684,7 +687,10 @@ class _MPageState extends State<MPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AllMacrosPage()),
+                    MaterialPageRoute(
+                        builder: (context) => AllMacrosPage(
+                              onSave: initInfo,
+                            )),
                   );
                 },
               ),

@@ -6,7 +6,8 @@ import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
 class AllMacrosPage extends StatefulWidget {
-  const AllMacrosPage({Key? key}) : super(key: key);
+  final VoidCallback onSave;
+  const AllMacrosPage({Key? key, required this.onSave}) : super(key: key);
 
   @override
   _AllMacrosPageState createState() => _AllMacrosPageState();
@@ -197,6 +198,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
                                     MaterialPageRoute(
                                       builder: (context) => EditMacroPage(
                                         macroId: macro['IdMacro'].toString(),
+                                        onSave: fetchMacros,
                                       ),
                                     ),
                                   );
@@ -287,11 +289,11 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreateMacroPage(),
+                  builder: (context) => CreateMacroPage(
+                    onSave: fetchMacros,
+                  ),
                 ),
-              ).then((_) {
-                fetchMacros(); // Refresh the list after adding a new macro
-              });
+              );
             },
             child: const Icon(Icons.add),
           ),

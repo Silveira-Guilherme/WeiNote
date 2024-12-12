@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/createexec.dart';
+import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
 class ExerciseListPage extends StatefulWidget {
@@ -180,20 +181,29 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text(
-          'Select Exercises & Macros',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: submitExercises,
-            color: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70.0),
+        child: AppBar(
+          backgroundColor: primaryColor,
+          iconTheme: const IconThemeData(color: secondaryColor // Change the back button color to white
+              ),
+          title: const Text(
+            'Select Exercises & Macros',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24.0, // Adjust the font size
+              color: Colors.white,
+            ),
           ),
-        ],
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: submitExercises,
+              color: Colors.white,
+            ),
+          ],
+        ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -209,49 +219,43 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                       bool isAlreadyAdded = isItemAlreadyAdded(item); // Check if the item is already added
 
                       return GestureDetector(
-                        onTap: isAlreadyAdded
-                            ? null
-                            : () {
-                                changeValue(!completed[index], index);
-                              },
+                        onTap: () {
+                          if (!isAlreadyAdded) {
+                            changeValue(!completed[index], index);
+                          }
+                        },
                         child: Card(
                           elevation: 3,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           color: isAlreadyAdded
-                              ? Colors.grey.shade300
+                              ? completed[index]
+                                  ? accentColor1
+                                  : secondaryColor
                               : completed[index]
-                                  ? const Color.fromARGB(255, 220, 237, 200)
-                                  : Colors.white,
+                                  ? accentColor2
+                                  : secondaryColor,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
                             child: Column(
                               children: [
                                 ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.black,
-                                    child: Text(
-                                      (index + 1).toString(),
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                  ),
                                   title: Text(
                                     isMacro ? 'Macro: ${item['quantity']}x - ${item['exerciseNames']}' : item['Name'] ?? 'Exercise',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                      color: isMacro ? Colors.blueAccent : Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      color: completed[index] ? secondaryColor : primaryColor,
                                     ),
                                   ),
                                   trailing: Checkbox(
-                                    value: completed[index], // Reflects initial state based on whether it's already added
+                                    value: completed[index],
                                     onChanged: (value) {
-                                      if (!isAlreadyAdded || value == false) {
-                                        // Allow deselection of already added items
-                                        changeValue(value!, index);
-                                      }
+                                      changeValue(value!, index);
                                     },
+                                    activeColor: primaryColor,
+                                    checkColor: secondaryColor, // Color of the check inside the box
                                   ),
                                   onTap: isAlreadyAdded
                                       ? null
@@ -259,14 +263,6 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
                                           changeExpanded(!expandedList[index], index);
                                         },
                                 ),
-                                if (expandedList[index] && !isMacro)
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: const Text(
-                                      'Additional details about the exercise',
-                                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                                    ),
-                                  ),
                               ],
                             ),
                           ),
@@ -278,7 +274,7 @@ class _ExerciseListPageState extends State<ExerciseListPage> {
               ],
             ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
+        backgroundColor: accentColor2,
         foregroundColor: Colors.white,
         onPressed: () {
           Navigator.push(

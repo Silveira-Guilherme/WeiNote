@@ -107,6 +107,12 @@ class _CPageState extends State<CPage> {
             ),
           ),
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: submitTraining,
+            )
+          ],
         ),
       ),
       body: Padding(
@@ -116,9 +122,16 @@ class _CPageState extends State<CPage> {
             // Training Name Input
             TextField(
               controller: trainingNameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: "Training Name",
-                border: OutlineInputBorder(),
+                labelStyle: const TextStyle(color: Colors.black),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black, width: 2.0),
+                ),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
@@ -126,15 +139,25 @@ class _CPageState extends State<CPage> {
             // Training Type Input
             TextField(
               controller: trainingTypeController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: "Training Type",
-                border: OutlineInputBorder(),
+                labelStyle: const TextStyle(color: Colors.black),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black, width: 2.0),
+                ),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
 
             // Day Selection Buttons
-            const Text("Select Training Days:"),
+            const Text(
+              "Select Training Days:",
+              style: TextStyle(color: Colors.black),
+            ),
             Wrap(
               spacing: 10,
               children: List.generate(weekDays.length, (index) {
@@ -155,26 +178,6 @@ class _CPageState extends State<CPage> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          // Call submitTraining() and get the generated training ID
-          int? trainingId = await submitTraining();
-
-          if (trainingId != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => ExerciseListPage(
-                        onSave: initState,
-                        trainingId: trainingId,
-                      )),
-            );
-          }
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

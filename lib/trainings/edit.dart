@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:gymdo/exercises/selectexec.dart';
 import 'package:gymdo/main.dart';
 import '../sql.dart';
 
@@ -202,32 +204,69 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Training'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveTraining,
-          )
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70.0),
+        child: AppBar(
+          backgroundColor: primaryColor,
+          iconTheme: const IconThemeData(color: secondaryColor // Change the back button color to white
+              ),
+          title: const Text(
+            'Edit Training',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24.0, // Adjust the font size
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: _saveTraining,
+            )
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             // Training Name
+            // Training Name
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Training Name'),
+              cursorColor: Colors.black, // Set the cursor color to black
+              decoration: const InputDecoration(
+                labelText: 'Training Name',
+                labelStyle: TextStyle(color: Colors.black), // Label text color
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black), // Black border
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black), // Black border on focus
+                ),
+              ),
+              style: const TextStyle(color: Colors.black), // Text input color
             ),
+
             const SizedBox(height: 16),
 
-            // Training Type
+// Training Type
             TextField(
               controller: _typeController,
-              decoration: const InputDecoration(labelText: 'Training Type'),
+              cursorColor: Colors.black, // Set the cursor color to black
+              decoration: const InputDecoration(
+                labelText: 'Training Type',
+                labelStyle: TextStyle(color: Colors.black), // Label text color
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black), // Black border
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black), // Black border on focus
+                ),
+              ),
+              style: const TextStyle(color: Colors.black), // Text input color
             ),
-            const SizedBox(height: 16),
 
             // Days Selector
             const Text('Training Days', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -358,6 +397,22 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
             )
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ExerciseListPage(
+                onSave: _fetchTrainingData,
+                trainingId: widget.trainingId,
+              ),
+            ),
+          );
+        },
+        foregroundColor: secondaryColor,
+        backgroundColor: primaryColor,
+        child: Icon(Icons.add),
       ),
     );
   }

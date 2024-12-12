@@ -308,7 +308,7 @@ class _MPageState extends State<MPage> {
                 const SizedBox(height: 10),
                 // Date and Chronometer Card
                 SizedBox(
-                  height: 200,
+                  height: 210,
                   width: MediaQuery.of(context).size.width - 10,
                   child: Card(
                     color: accentColor1,

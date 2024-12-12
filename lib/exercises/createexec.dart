@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gymdo/main.dart';
 import '/../sql.dart'; // Ensure this points to your database helper
 
 class CreateExercisePage extends StatefulWidget {
@@ -83,10 +84,30 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Create Exercise'),
-        centerTitle: true,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70.0),
+        child: AppBar(
+          backgroundColor: primaryColor,
+          iconTheme: const IconThemeData(
+            color: secondaryColor, // Change the back button color to white
+          ),
+          title: const Text(
+            'Create Exercise',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24.0, // Adjust the font size
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: createExercise,
+              color: Colors.white,
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -95,10 +116,18 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
           children: [
             TextField(
               controller: exerciseNameController,
-              decoration: const InputDecoration(
+              cursorColor: Colors.black, // Set the cursor color to black
+              decoration: InputDecoration(
                 labelText: 'Exercise Name',
-                border: OutlineInputBorder(),
+                labelStyle: const TextStyle(color: Colors.black), // Label color
+                border: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black), // Black border
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black), // Black border on focus
+                ),
               ),
+              style: const TextStyle(color: Colors.black), // Text color
             ),
             const SizedBox(height: 16),
 
@@ -112,10 +141,18 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
                     Expanded(
                       child: TextField(
                         controller: pesoControllers[index],
-                        decoration: const InputDecoration(
+                        cursorColor: Colors.black, // Set the cursor color to black
+                        decoration: InputDecoration(
                           labelText: 'Peso',
-                          border: OutlineInputBorder(),
+                          labelStyle: const TextStyle(color: Colors.black),
+                          border: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
+                          ),
                         ),
+                        style: const TextStyle(color: Colors.black),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -123,16 +160,27 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
                     Expanded(
                       child: TextField(
                         controller: repControllers[index],
-                        decoration: const InputDecoration(
+                        cursorColor: Colors.black, // Set the cursor color to black
+                        decoration: InputDecoration(
                           labelText: 'Reps',
-                          border: OutlineInputBorder(),
+                          labelStyle: const TextStyle(color: Colors.black),
+                          border: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
+                          ),
                         ),
+                        style: const TextStyle(color: Colors.black),
                         keyboardType: TextInputType.number,
                       ),
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.delete),
+                      icon: const Icon(
+                        Icons.delete,
+                        color: accentColor2,
+                      ),
                       onPressed: () {
                         // Remove the corresponding series input
                         pesoControllers.removeAt(index);
@@ -146,21 +194,16 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
             ),
 
             const SizedBox(height: 8),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: addSeries,
+              icon: const Icon(Icons.add, color: Colors.white), // Add icon
+              label: const Text(
+                'Add Series',
+                style: TextStyle(color: Colors.white), // Button text color
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
               ),
-              child: const Text('Add Series'),
-            ),
-
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: isLoading ? null : createExercise,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-              ),
-              child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Create Exercise'),
             ),
           ],
         ),

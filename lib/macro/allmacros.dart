@@ -7,13 +7,13 @@ import '/../sql.dart';
 
 class AllMacrosPage extends StatefulWidget {
   final VoidCallback onSave;
-  const AllMacrosPage({Key? key, required this.onSave}) : super(key: key);
+  const AllMacrosPage({super.key, required this.onSave});
 
   @override
-  _AllMacrosPageState createState() => _AllMacrosPageState();
+  AllMacrosPageState createState() => AllMacrosPageState();
 }
 
-class _AllMacrosPageState extends State<AllMacrosPage> {
+class AllMacrosPageState extends State<AllMacrosPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> macros = [];
   List<bool> expandedList = [];
@@ -133,11 +133,15 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: secondaryColor),
-        backgroundColor: Colors.black,
         title: Text(
           isDeleteMode ? 'Delete Mode' : 'All Circuits',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24.0,
+            color: secondaryColor,
+          ),
         ),
         centerTitle: true,
       ),
@@ -298,7 +302,7 @@ class _AllMacrosPageState extends State<AllMacrosPage> {
             child: const Icon(Icons.add),
           ),
           SpeedDialChild(
-            child: Icon(Icons.delete),
+            child: const Icon(Icons.delete),
             label: isDeleteMode ? 'Disable Delete Mode' : 'Enable Delete Mode',
             foregroundColor: secondaryColor,
             backgroundColor: primaryColor,

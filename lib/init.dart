@@ -1,33 +1,35 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:gymdo/mpage.dart';
 import 'sql.dart';
 
 class InitPage extends StatefulWidget {
+  const InitPage({super.key});
+
   @override
-  _InitPageState createState() => _InitPageState();
+  InitPageState createState() => InitPageState();
 }
 
-class _InitPageState extends State<InitPage> {
+class InitPageState extends State<InitPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
 
-  final TextEditingController _NameController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
 
-  Query(String query) async {
+  query(String query) async {
     DatabaseHelper dbHelper = DatabaseHelper();
-    List<Map<String, dynamic>> queryResult = await dbHelper.customQuery(query);
-    print(query);
+    await dbHelper.customQuery(query);
   }
 
-  VerifyLog() async {
+  verifyLog() async {
     DatabaseHelper dbHelper = DatabaseHelper();
-    List<Map<String, dynamic>> queryResult =
-        await dbHelper.customQuery('select Init from user');
-    print(queryResult);
+    List<Map<String, dynamic>> queryResult = await dbHelper.customQuery('select Init from user');
+    //print(queryResult);
     if (queryResult[0]['Init'] == 1) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MPage(),
+          builder: (context) => const MPage(),
         ),
       );
     }
@@ -35,7 +37,7 @@ class _InitPageState extends State<InitPage> {
 
   @override
   void initState() {
-    VerifyLog();
+    verifyLog();
     super.initState();
   }
 
@@ -43,7 +45,7 @@ class _InitPageState extends State<InitPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(70.0), // Adjust the height of the AppBar
+        preferredSize: const Size.fromHeight(70.0), // Adjust the height of the AppBar
         child: AppBar(
           backgroundColor: Colors.black,
           title: const Text(
@@ -72,38 +74,32 @@ class _InitPageState extends State<InitPage> {
                   const Text('Insert your Name'),
                   const SizedBox(height: 20),
                   TextField(
-                    controller: _NameController,
+                    controller: nameController,
                     cursorColor: Colors.black, // Set the cursor color to black
                     decoration: const InputDecoration(
                       labelText: 'Name',
-                      floatingLabelBehavior: FloatingLabelBehavior
-                          .auto, // Label moves to top when focused
+                      floatingLabelBehavior: FloatingLabelBehavior.auto, // Label moves to top when focused
                       labelStyle: TextStyle(color: Colors.black), // Label color
                       border: OutlineInputBorder(),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
-                          color: Colors
-                              .black, // Change the border color when focused
+                          color: Colors.black, // Change the border color when focused
                         ),
                       ),
                       // Error border when focused
                       focusedErrorBorder: OutlineInputBorder(
                         borderSide: BorderSide(
-                          color: Colors
-                              .black, // Change error border color when focused
+                          color: Colors.black, // Change error border color when focused
                         ),
                       ),
-                      prefixIcon:
-                          Icon(Icons.person, color: Colors.black), // Icon color
+                      prefixIcon: Icon(Icons.person, color: Colors.black), // Icon color
                     ),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
-                      Query("insert into User values (0, '" +
-                          _NameController.text +
-                          "', 1);");
-                      VerifyLog();
+                      query("insert into User values (0, '${nameController.text}', 1);");
+                      verifyLog();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,

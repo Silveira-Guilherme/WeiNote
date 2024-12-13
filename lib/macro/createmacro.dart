@@ -1,15 +1,17 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import '/../sql.dart';
 
 class CreateMacroPage extends StatefulWidget {
   final VoidCallback onSave;
-  const CreateMacroPage({Key? key, required this.onSave}) : super(key: key);
+  const CreateMacroPage({super.key, required this.onSave});
 
   @override
-  _CreateMacroPageState createState() => _CreateMacroPageState();
+  CreateMacroPageState createState() => CreateMacroPageState();
 }
 
-class _CreateMacroPageState extends State<CreateMacroPage> {
+class CreateMacroPageState extends State<CreateMacroPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   final _formKey = GlobalKey<FormState>();
 

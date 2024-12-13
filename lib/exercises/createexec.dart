@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:gymdo/main.dart';
 import '/../sql.dart'; // Ensure this points to your database helper
@@ -5,13 +7,13 @@ import '/../sql.dart'; // Ensure this points to your database helper
 class CreateExercisePage extends StatefulWidget {
   final VoidCallback onSave; // Callback to notify parent widget about changes
 
-  const CreateExercisePage({Key? key, required this.onSave}) : super(key: key);
+  const CreateExercisePage({super.key, required this.onSave});
 
   @override
-  _CreateExercisePageState createState() => _CreateExercisePageState();
+  CreateExercisePageState createState() => CreateExercisePageState();
 }
 
-class _CreateExercisePageState extends State<CreateExercisePage> {
+class CreateExercisePageState extends State<CreateExercisePage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   final TextEditingController exerciseNameController = TextEditingController();
   final List<TextEditingController> pesoControllers = [];
@@ -66,7 +68,7 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $error')),
       );
-      print(error);
+      //print(error);
     } finally {
       setState(() {
         isLoading = false;
@@ -117,13 +119,13 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
             TextField(
               controller: exerciseNameController,
               cursorColor: Colors.black, // Set the cursor color to black
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Exercise Name',
-                labelStyle: const TextStyle(color: Colors.black), // Label color
-                border: const OutlineInputBorder(
+                labelStyle: TextStyle(color: Colors.black), // Label color
+                border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.black), // Black border
                 ),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.black), // Black border on focus
                 ),
               ),
@@ -142,13 +144,13 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
                       child: TextField(
                         controller: pesoControllers[index],
                         cursorColor: Colors.black, // Set the cursor color to black
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Peso',
-                          labelStyle: const TextStyle(color: Colors.black),
-                          border: const OutlineInputBorder(
+                          labelStyle: TextStyle(color: Colors.black),
+                          border: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.black),
                           ),
-                          focusedBorder: const OutlineInputBorder(
+                          focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.black),
                           ),
                         ),
@@ -161,13 +163,13 @@ class _CreateExercisePageState extends State<CreateExercisePage> {
                       child: TextField(
                         controller: repControllers[index],
                         cursorColor: Colors.black, // Set the cursor color to black
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Reps',
-                          labelStyle: const TextStyle(color: Colors.black),
-                          border: const OutlineInputBorder(
+                          labelStyle: TextStyle(color: Colors.black),
+                          border: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.black),
                           ),
-                          focusedBorder: const OutlineInputBorder(
+                          focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Colors.black),
                           ),
                         ),

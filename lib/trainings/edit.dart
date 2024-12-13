@@ -1,5 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/exercises/selectexec.dart';
 import 'package:gymdo/main.dart';
 import '../sql.dart';
@@ -8,13 +9,13 @@ class EditTrainingPage extends StatefulWidget {
   final int trainingId;
   final VoidCallback onSave;
 
-  const EditTrainingPage({required this.trainingId, Key? key, required this.onSave}) : super(key: key);
+  const EditTrainingPage({required this.trainingId, super.key, required this.onSave});
 
   @override
-  State<EditTrainingPage> createState() => _EditTrainingPageState();
+  State<EditTrainingPage> createState() => EditTrainingPageState();
 }
 
-class _EditTrainingPageState extends State<EditTrainingPage> {
+class EditTrainingPageState extends State<EditTrainingPage> {
   late TextEditingController _nameController;
   late TextEditingController _typeController;
 
@@ -153,7 +154,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
 
       // Sort the combined list by Exerorder
       combinedItems.sort((a, b) => (a['Exerorder'] as int).compareTo(b['Exerorder'] as int));
-      print(combinedItems);
+      //print(combinedItems);
 
       // Update state with fetched data
       setState(() {
@@ -169,7 +170,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
       });
     } catch (e) {
       // Handle errors here
-      print('Error fetching training details: $e');
+      //print('Error fetching training details: $e');
       setState(() {
         _exercisesAndMacros = [];
       });
@@ -311,11 +312,11 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                         collapsedIconColor: secondaryColor,
                         title: Text(
                           'Macro: ${item['IdMacro']}',
-                          style: TextStyle(color: secondaryColor),
+                          style: const TextStyle(color: secondaryColor),
                         ),
                         subtitle: Text(
                           'Quantity: ${item['quantity']}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.grey,
                           ),
                         ),
@@ -327,7 +328,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                               collapsedIconColor: secondaryColor,
                               title: Text(
                                 'Exercise: $exerciseName',
-                                style: TextStyle(color: secondaryColor),
+                                style: const TextStyle(color: secondaryColor),
                               ),
                               children: [
                                 Padding(
@@ -338,12 +339,12 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                                       // Use shrinkWrap and remove unnecessary inner Column
                                       ListView.builder(
                                         shrinkWrap: true, // Prevents ListView from taking infinite height
-                                        physics: NeverScrollableScrollPhysics(), // Disable scrolling inside ExpansionTile
+                                        physics: const NeverScrollableScrollPhysics(), // Disable scrolling inside ExpansionTile
                                         itemCount: item['exercises'][exerciseName]['Peso'].length,
                                         itemBuilder: (context, index3) {
                                           return Text(
                                             'Peso: ${item['exercises'][exerciseName]['Peso'][index3]}, Rep: ${item['exercises'][exerciseName]['Rep'][index3]}',
-                                            style: TextStyle(color: secondaryColor),
+                                            style: const TextStyle(color: secondaryColor),
                                           );
                                         },
                                       ),
@@ -366,7 +367,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                         collapsedIconColor: secondaryColor,
                         title: Text(
                           'Exercise: ${item['itemName']}',
-                          style: TextStyle(color: secondaryColor),
+                          style: const TextStyle(color: secondaryColor),
                         ),
                         children: [
                           Padding(
@@ -375,12 +376,12 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                               children: [
                                 ListView.builder(
                                   shrinkWrap: true, // Prevents the ListView from taking up infinite space
-                                  physics: NeverScrollableScrollPhysics(), // Disables scrolling if it's inside a Column
+                                  physics: const NeverScrollableScrollPhysics(), // Disables scrolling if it's inside a Column
                                   itemCount: item['pesoList'].length,
                                   itemBuilder: (context, index2) {
                                     return Text(
                                       'Peso: ${item['pesoList'][index2]}, Rep: ${item['repsList'][index2]}',
-                                      style: TextStyle(color: secondaryColor),
+                                      style: const TextStyle(color: secondaryColor),
                                     );
                                   },
                                 ),
@@ -412,7 +413,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
         },
         foregroundColor: secondaryColor,
         backgroundColor: primaryColor,
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/createexec.dart';
 import 'package:gymdo/main.dart';
@@ -7,13 +9,13 @@ class ExerciseListPage extends StatefulWidget {
   final int trainingId;
   final VoidCallback onSave; // Callback to trigger on save
 
-  const ExerciseListPage({Key? key, required this.trainingId, required this.onSave}) : super(key: key);
+  const ExerciseListPage({super.key, required this.trainingId, required this.onSave});
 
   @override
-  _ExerciseListPageState createState() => _ExerciseListPageState();
+  ExerciseListPageState createState() => ExerciseListPageState();
 }
 
-class _ExerciseListPageState extends State<ExerciseListPage> {
+class ExerciseListPageState extends State<ExerciseListPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> items = [];
   List<bool> expandedList = [];

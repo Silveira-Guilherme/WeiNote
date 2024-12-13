@@ -1,8 +1,7 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'dart:async'; // For Timer
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/allexercises.dart';
-import 'package:gymdo/exercises/createexec.dart';
 import 'package:gymdo/macro/allmacros.dart';
 import 'package:gymdo/main.dart';
 import 'package:gymdo/trainings/edit.dart';
@@ -15,6 +14,8 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/trainings/trainings.dart' as tr;
 
 class MPage extends StatefulWidget {
+  const MPage({super.key});
+
   @override
   _MPageState createState() => _MPageState();
 }
@@ -131,7 +132,7 @@ class _MPageState extends State<MPage> {
         int trainingId = item['CodTr'];
         int exerciseId = item['IdExer'];
 
-        if (trainingMap.containsKey(trainingId) && exerciseId != null) {
+        if (trainingMap.containsKey(trainingId)) {
           Training training = trainingMap[trainingId]!;
 
           // Find or create exercise entry
@@ -221,7 +222,7 @@ class _MPageState extends State<MPage> {
       // Assign the final list of trainings
       trainings = trainingMap.values.toList();
     } catch (error) {
-      print('Error fetching training data: $error');
+      //print('Error fetching training data: $error');
     }
 
     setState(() {}); // Trigger UI rebuild
@@ -291,10 +292,12 @@ class _MPageState extends State<MPage> {
           appBar: AppBar(
             backgroundColor: primaryColor,
             automaticallyImplyLeading: false,
-            title: Text(
-              'Olá $names',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0, color: secondaryColor),
-            ),
+            title: Text('Olá $names',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24.0,
+                  color: secondaryColor,
+                )),
             centerTitle: true,
             titleSpacing: 10.0,
           ),
@@ -478,7 +481,7 @@ class _MPageState extends State<MPage> {
                                         crossAxisAlignment: CrossAxisAlignment.start, // Aligns children of the Column to the left
                                         children: [
                                           Text(
-                                            'Circuit: ${exerciseNames}', // Display exercise names separated by " - "
+                                            'Circuit: $exerciseNames', // Display exercise names separated by " - "
                                             style: const TextStyle(
                                               color: secondaryColor,
                                             ),
@@ -506,7 +509,7 @@ class _MPageState extends State<MPage> {
                                 ),
                                 children: [
                                   Padding(
-                                    padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
+                                    padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       // Align at the start of the row
@@ -552,7 +555,7 @@ class _MPageState extends State<MPage> {
                                         )
                                       ],
                                     );
-                                  }).toList(),
+                                  }),
                                 ],
                               ));
                             }
@@ -630,7 +633,7 @@ class _MPageState extends State<MPage> {
                           );
                         },
                       )
-                    : Center(
+                    : const Center(
                         child: Text(
                           "No trainings saved",
                           style: TextStyle(
@@ -660,7 +663,10 @@ class _MPageState extends State<MPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CPage()),
+                    MaterialPageRoute(
+                        builder: (context) => CPage(
+                              onSave: initInfo,
+                            )),
                   );
                 },
               ),

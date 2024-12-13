@@ -1,4 +1,4 @@
-import 'dart:math';
+// ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:gymdo/main.dart';
@@ -8,13 +8,13 @@ class EditMacroPage extends StatefulWidget {
   final VoidCallback onSave;
   final String macroId;
 
-  const EditMacroPage({Key? key, required this.macroId, required this.onSave}) : super(key: key);
+  const EditMacroPage({super.key, required this.macroId, required this.onSave});
 
   @override
-  _EditMacroPageState createState() => _EditMacroPageState();
+  EditMacroPageState createState() => EditMacroPageState();
 }
 
-class _EditMacroPageState extends State<EditMacroPage> {
+class EditMacroPageState extends State<EditMacroPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> exercises = [];
   Set<int> macroExercises = {};
@@ -104,7 +104,7 @@ class _EditMacroPageState extends State<EditMacroPage> {
         isLoading = false;
       });
     } catch (error) {
-      print('Error fetching macro details: $error');
+      //print('Error fetching macro details: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to load data. Please try again later.')),
       );
@@ -125,7 +125,7 @@ class _EditMacroPageState extends State<EditMacroPage> {
 
       Navigator.pop(context);
     } catch (error) {
-      print('Error saving macro changes: $error');
+      //print('Error saving macro changes: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to save changes. Please try again.')),
       );

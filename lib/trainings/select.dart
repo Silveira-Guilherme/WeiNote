@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/main.dart';
@@ -10,10 +12,10 @@ class TrainingListPage extends StatefulWidget {
   const TrainingListPage({super.key, required this.onSave});
 
   @override
-  _TrainingListPageState createState() => _TrainingListPageState();
+  TrainingListPageState createState() => TrainingListPageState();
 }
 
-class _TrainingListPageState extends State<TrainingListPage> {
+class TrainingListPageState extends State<TrainingListPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> trainings = [];
   bool isLoading = true;
@@ -61,7 +63,7 @@ class _TrainingListPageState extends State<TrainingListPage> {
               iconTheme: const IconThemeData(color: secondaryColor),
               title: Text(
                 isDeleteMode ? 'Delete Mode' : 'All Trainings',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 24.0,
                   color: secondaryColor,
@@ -178,9 +180,12 @@ class _TrainingListPageState extends State<TrainingListPage> {
                 backgroundColor: accentColor2,
                 onTap: () {
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CPage()),
-                  );
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CPage(
+                          onSave: fetchTrainings,
+                        ),
+                      ));
                 },
               ),
               SpeedDialChild(

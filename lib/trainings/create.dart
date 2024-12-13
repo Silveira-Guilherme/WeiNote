@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:gymdo/exercises/selectexec.dart';
 import 'package:intl/intl.dart';
 import '/../sql.dart';
 
 class CPage extends StatefulWidget {
-  const CPage({super.key});
+  final VoidCallback onSave;
+  const CPage({super.key, required this.onSave});
 
   @override
-  _CPageState createState() => _CPageState();
+  CPageState createState() => CPageState();
 }
 
-class _CPageState extends State<CPage> {
+class CPageState extends State<CPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   String data = '';
   DateTime now = DateTime.now();
@@ -122,16 +122,16 @@ class _CPageState extends State<CPage> {
             // Training Name Input
             TextField(
               controller: trainingNameController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "Training Name",
-                labelStyle: const TextStyle(color: Colors.black),
-                enabledBorder: const OutlineInputBorder(
+                labelStyle: TextStyle(color: Colors.black),
+                enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.black),
                 ),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.black, width: 2.0),
                 ),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
@@ -139,16 +139,16 @@ class _CPageState extends State<CPage> {
             // Training Type Input
             TextField(
               controller: trainingTypeController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: "Training Type",
-                labelStyle: const TextStyle(color: Colors.black),
-                enabledBorder: const OutlineInputBorder(
+                labelStyle: TextStyle(color: Colors.black),
+                enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.black),
                 ),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.black, width: 2.0),
                 ),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),

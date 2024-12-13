@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters
+
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/exercises/createexec.dart';
@@ -11,10 +13,10 @@ class AllExercisesPage extends StatefulWidget {
   const AllExercisesPage({Key? key, required this.onSave}) : super(key: key);
 
   @override
-  _AllExercisesPageState createState() => _AllExercisesPageState();
+  AllExercisesPageState createState() => AllExercisesPageState();
 }
 
-class _AllExercisesPageState extends State<AllExercisesPage> {
+class AllExercisesPageState extends State<AllExercisesPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> exercises = [];
   List<bool> expandedList = [];

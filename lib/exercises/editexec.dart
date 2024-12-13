@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import '/../sql.dart'; // Ensure you have the correct path to your SQL helper
 
@@ -5,16 +7,17 @@ class EditExercisePage extends StatefulWidget {
   final int exerciseId; // Existing exercise ID to edit
   final VoidCallback onSave; // Callback to trigger on save
 
-  EditExercisePage({
+  const EditExercisePage({
+    super.key,
     required this.exerciseId,
     required this.onSave,
   });
 
   @override
-  _EditExercisePageState createState() => _EditExercisePageState();
+  EditExercisePageState createState() => EditExercisePageState();
 }
 
-class _EditExercisePageState extends State<EditExercisePage> {
+class EditExercisePageState extends State<EditExercisePage> {
   late TextEditingController nameController;
   List<Map<String, TextEditingController>> seriesControllers = [];
 
@@ -28,10 +31,10 @@ class _EditExercisePageState extends State<EditExercisePage> {
   @override
   void dispose() {
     nameController.dispose();
-    seriesControllers.forEach((controller) {
+    for (var controller in seriesControllers) {
       controller['weight']?.dispose();
       controller['reps']?.dispose();
-    });
+    }
     super.dispose();
   }
 
@@ -90,7 +93,7 @@ class _EditExercisePageState extends State<EditExercisePage> {
 
     // Validate inputs
     if (exerciseName.isEmpty || seriesControllers.isEmpty) {
-      print('Please fill in the exercise name and at least one set.');
+      //print('Please fill in the exercise name and at least one set.');
       return;
     }
 
@@ -112,7 +115,7 @@ class _EditExercisePageState extends State<EditExercisePage> {
 
       // Validate individual weight and reps
       if (weightText.isEmpty || repsText.isEmpty) {
-        print('Please fill in all fields for each set.');
+        //print('Please fill in all fields for each set.');
         return;
       }
 
@@ -181,7 +184,7 @@ class _EditExercisePageState extends State<EditExercisePage> {
                             child: TextField(
                               controller: seriesControllers[index]['weight'],
                               decoration: const InputDecoration(labelText: 'Weight (kg)'),
-                              keyboardType: TextInputType.numberWithOptions(decimal: true),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             ),
                           ),
                           const SizedBox(width: 8),

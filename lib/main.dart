@@ -10,13 +10,15 @@ const Color accentColor2 = Colors.red; // Example accent color 2
 
 void main() {
   initializeDateFormatting('pt_BR', null);
-  runApp(MainPage());
+  runApp(const MainPage());
 }
 
 class MainPage extends StatelessWidget {
+  const MainPage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: InitPage(),
     );
   }

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/exercises/selectexec.dart';
@@ -12,10 +14,10 @@ class TrainingDetailsPage extends StatefulWidget {
   const TrainingDetailsPage({super.key, required this.trainingId, required this.onSave});
 
   @override
-  _TrainingDetailsPageState createState() => _TrainingDetailsPageState();
+  TrainingDetailsPageState createState() => TrainingDetailsPageState();
 }
 
-class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
+class TrainingDetailsPageState extends State<TrainingDetailsPage> {
   final DatabaseHelper dbHelper = DatabaseHelper();
   String trainingName = '';
   String trainingType = '';
@@ -156,7 +158,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
         trainingDays = [];
         items = [];
       });
-      print('Error fetching training details: $e');
+      //print('Error fetching training details: $e');
     }
   }
 
@@ -209,7 +211,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                         const SizedBox(height: 8),
                         Text(
                           'Type: $trainingType',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
                             color: primaryColor,
@@ -231,7 +233,7 @@ class _TrainingDetailsPageState extends State<TrainingDetailsPage> {
                                   .map((day) => Chip(
                                         label: Text(
                                           day,
-                                          style: TextStyle(color: secondaryColor),
+                                          style: const TextStyle(color: secondaryColor),
                                         ),
                                         backgroundColor: primaryColor,
                                         labelStyle: const TextStyle(fontWeight: FontWeight.w500),

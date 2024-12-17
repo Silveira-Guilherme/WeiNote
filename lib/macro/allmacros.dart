@@ -286,9 +286,9 @@ class AllMacrosPageState extends State<AllMacrosPage> {
         spacing: 12,
         children: [
           SpeedDialChild(
-            backgroundColor: Colors.black,
+            backgroundColor: accentColor2,
             foregroundColor: Colors.white,
-            label: 'Add Circuit',
+            label: 'Create Circuit',
             onTap: () {
               Navigator.push(
                 context,

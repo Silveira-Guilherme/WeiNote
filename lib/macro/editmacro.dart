@@ -1,6 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:gymdo/macro/addexermacro.dart';
 import 'package:gymdo/main.dart';
 import '/../sql.dart';
 
@@ -272,6 +274,22 @@ class EditMacroPageState extends State<EditMacroPage> {
                 ),
               ],
             ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: accentColor2,
+        foregroundColor: Colors.white,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddExercisesToMacroPage(
+                onSave: fetchMacroDetails,
+                macroId: int.parse(widget.macroId),
+              ),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

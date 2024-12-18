@@ -52,17 +52,13 @@ class EditTrainingPageState extends State<EditTrainingPage> {
 
       // Fetch exercises for the training
       List<Map<String, dynamic>> exercisesResult = await dbHelper.customQuery("""
-        SELECT e.Name AS itemName, 
-               e.IdExer, 
-               'exercise' AS itemType, 
-               te.Exerorder AS Exerorder,
-               GROUP_CONCAT(s.Peso) AS pesos, 
-               GROUP_CONCAT(s.Rep) AS reps
-        FROM Exer e
-        INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
-        LEFT JOIN Serie s ON s.CodExer = e.IdExer
-        WHERE te.CodTr = ${widget.trainingId}
-        GROUP BY e.IdExer
+        SELECT e.Name AS itemName, e.IdExer, 'exercise' AS itemType, te.Exerorder AS Exerorder,
+       GROUP_CONCAT(DISTINCT s.Peso) AS pesos, GROUP_CONCAT(DISTINCT s.Rep) AS reps
+FROM Exer e
+INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
+LEFT JOIN Serie s ON s.CodExer = e.IdExer
+WHERE te.CodTr = ${widget.trainingId}
+GROUP BY e.IdExer
       """);
 
       // Fetch macros for the training

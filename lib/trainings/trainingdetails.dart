@@ -28,95 +28,80 @@ class TrainingDetailsPageState extends State<TrainingDetailsPage> {
   Future<void> fetchTrainingDetails() async {
     try {
       // Fetch training details
-      List<Map<String, dynamic>> trainingResult = await dbHelper.customQuery("SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
-
-      // Fetch training days
-      List<Map<String, dynamic>> daysResult = await dbHelper.customQuery("""
-      SELECT distinct d.Name AS Day 
+      var trainingResult = await dbHelper.customQuery("SELECT Name, Type FROM Tr WHERE IdTr = ${widget.trainingId}");
+      var daysResult = await dbHelper.customQuery("""
+      SELECT DISTINCT d.Name AS Day 
       FROM Day d 
       INNER JOIN Tr_Day td ON d.IdDay = td.CodDay 
       WHERE td.CodTr = ${widget.trainingId}
     """);
 
-      // Fetch exercises with individual peso and rep data
-      List<Map<String, dynamic>> exercisesResult = await dbHelper.customQuery("""
-      SELECT e.Name AS itemName, 
-      e.IdExer, 
-      'exercise' AS itemType, 
-      te.Exerorder AS Exerorder,
-      GROUP_CONCAT(s.Peso) AS pesos, 
-      GROUP_CONCAT(s.Rep) AS reps
-      FROM Exer e
-      INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
+      var exercisesResult = await dbHelper.customQuery("""
+    SELECT e.Name AS itemName, e.IdExer, 'exercise' AS itemType, te.Exerorder AS Exerorder,
+       GROUP_CONCAT(DISTINCT s.Peso) AS pesos, GROUP_CONCAT(DISTINCT s.Rep) AS reps
+FROM Exer e
+INNER JOIN Tr_Exer te ON e.IdExer = te.CodExer
+LEFT JOIN Serie s ON s.CodExer = e.IdExer
+WHERE te.CodTr = ${widget.trainingId}
+GROUP BY e.IdExer
+    """);
+
+      var macrosResult = await dbHelper.customQuery("""
+      SELECT m.IdMacro, m.Qtt AS quantity, e.Name AS exerciseName, e.IdExer AS exerciseId, tm.Exerorder AS Exerorder,
+             GROUP_CONCAT(DISTINCT s.Peso) AS Peso, GROUP_CONCAT(DISTINCT s.Rep) AS Rep, 'macro' AS itemType
+      FROM Macro m
+      JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
+      JOIN Exer e ON em.CodExer = e.IdExer
       LEFT JOIN Serie s ON s.CodExer = e.IdExer
-      WHERE te.CodTr = ${widget.trainingId}
-      GROUP BY e.IdExer
+      JOIN Tr_Macro tm ON tm.CodMacro = m.IdMacro
+      WHERE tm.CodTr = ${widget.trainingId}
+      GROUP BY m.IdMacro, m.Qtt, e.Name, e.IdExer, tm.Exerorder
+      ORDER BY tm.Exerorder
     """);
 
-      // Fetch macros with quantity and associated exercises, along with their peso and rep values
-      List<Map<String, dynamic>> macrosResult = await dbHelper.customQuery("""
-      SELECT 
-        m.IdMacro, 
-        m.Qtt AS quantity, 
-        e.Name AS exerciseName, 
-        e.IdExer AS exerciseId, 
-        tm.Exerorder AS Exerorder,
-        GROUP_CONCAT(DISTINCT s.Peso) AS Peso, 
-        GROUP_CONCAT(DISTINCT s.Rep) AS Rep, 
-        'macro' AS itemType
-      FROM 
-        Macro m
-      JOIN 
-        Exer_Macro em ON m.IdMacro = em.CodMacro
-      JOIN 
-        Exer e ON em.CodExer = e.IdExer
-      LEFT JOIN 
-        Serie s ON s.CodExer = e.IdExer
-      JOIN 
-        Tr_Macro tm ON tm.CodMacro = m.IdMacro
-      WHERE 
-        tm.CodTr = ${widget.trainingId}
-      GROUP BY 
-        m.IdMacro, m.Qtt, e.Name, e.IdExer, tm.Exerorder
-      ORDER BY 
-        tm.Exerorder;
-    """);
-
-      // Initialize combined items list
+      // Processing data
       List<Map<String, dynamic>> combinedItems = [];
+      Set<int> seenExercises = {};
 
-      // Process exercises
+      // Process exercises (standalone exercises outside macros)
+      List<Map<String, dynamic>> exercises = [];
       for (var exercise in exercisesResult) {
         List<String> pesos = exercise['pesos']?.split(',') ?? [];
         List<String> reps = exercise['reps']?.split(',') ?? [];
 
-        combinedItems.add({
-          'itemName': exercise['itemName'],
-          'IdExer': exercise['IdExer'],
-          'itemType': exercise['itemType'],
-          'pesoList': pesos,
-          'repsList': reps,
-          'Exerorder': exercise['Exerorder'], // Exerorder determines sorting
-        });
+        // Remove duplicates from the pesoList and repsList
+        pesos = pesos.toSet().toList();
+        reps = reps.toSet().toList();
+
+        if (!seenExercises.contains(exercise['IdExer'])) {
+          exercises.add({
+            'itemName': exercise['itemName'],
+            'IdExer': exercise['IdExer'],
+            'itemType': exercise['itemType'],
+            'pesoList': pesos,
+            'repsList': reps,
+            'Exerorder': exercise['Exerorder'],
+          });
+          seenExercises.add(exercise['IdExer']); // Mark exercise as added
+        }
       }
 
-      // Process macros
+      // Process macros (exercises inside macros)
       Map<int, Map<String, dynamic>> macroMap = {};
       for (var macro in macrosResult) {
         int macroId = macro['IdMacro'];
 
-        // Initialize macro if not already present
+        // Only add the macro if it hasn't been added yet
         if (!macroMap.containsKey(macroId)) {
           macroMap[macroId] = {
             'IdMacro': macroId,
             'quantity': macro['quantity'],
             'itemType': 'macro',
-            'Exerorder': macro['Exerorder'], // Exerorder determines sorting
-            'exercises': {}, // Grouping exercises within this macro
+            'Exerorder': macro['Exerorder'],
+            'exercises': {},
           };
         }
 
-        // Group exercises within this macro
         String exerciseName = macro['exerciseName'];
         if (!macroMap[macroId]?['exercises'].containsKey(exerciseName)) {
           macroMap[macroId]?['exercises'][exerciseName] = {
@@ -125,24 +110,30 @@ class TrainingDetailsPageState extends State<TrainingDetailsPage> {
           };
         }
 
-        // Add Peso and Rep
         List<String> pesos = macro['Peso']?.split(',') ?? [];
         List<String> reps = macro['Rep']?.split(',') ?? [];
 
-        if (pesos.length == reps.length) {
-          macroMap[macroId]?['exercises'][exerciseName]['Peso'].addAll(pesos);
-          macroMap[macroId]?['exercises'][exerciseName]['Rep'].addAll(reps);
-        }
+        macroMap[macroId]?['exercises'][exerciseName]['Peso']?.addAll(pesos);
+        macroMap[macroId]?['exercises'][exerciseName]['Rep']?.addAll(reps);
+
+        // Mark exercises inside macros as seen so they are not duplicated in the standalone list
+        seenExercises.add(macro['exerciseId']);
       }
 
-      // Add macros to the combined list
+      // Add exercises from macros to combinedItems
       for (var macro in macroMap.values) {
         combinedItems.add(macro);
       }
 
-      // Sort the combined list by Exerorder
+      // Add standalone exercises (outside macros) that are not already inside macros
+      for (var exercise in exercises) {
+        combinedItems.add(exercise);
+      }
+
+      // Sort by Exerorder to maintain the correct order
       combinedItems.sort((a, b) => (a['Exerorder'] as int).compareTo(b['Exerorder'] as int));
 
+      // Updating state with processed data
       setState(() {
         trainingName = trainingResult.isNotEmpty ? trainingResult[0]['Name'] : 'Unnamed Training';
         trainingType = trainingResult.isNotEmpty ? trainingResult[0]['Type'] ?? 'No type specified' : 'No type specified';
@@ -158,7 +149,6 @@ class TrainingDetailsPageState extends State<TrainingDetailsPage> {
         trainingDays = [];
         items = [];
       });
-      //print('Error fetching training details: $e');
     }
   }
 

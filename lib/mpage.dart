@@ -431,6 +431,7 @@ class _MPageState extends State<MPage> {
                           for (var item in combinedList) {
                             if (item['type'] == 'exercise') {
                               Exercise exercise = item['item'];
+
                               trainingWidgets.add(
                                 ExpansionTile(
                                   iconColor: secondaryColor,
@@ -474,14 +475,14 @@ class _MPageState extends State<MPage> {
                                 iconColor: secondaryColor,
                                 collapsedIconColor: secondaryColor,
                                 title: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start, // Ensures children in the Row align to the start
+                                  mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start, // Aligns children of the Column to the left
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Circuit: $exerciseNames', // Display exercise names separated by " - "
+                                            'Circuit: $exerciseNames',
                                             style: const TextStyle(
                                               color: secondaryColor,
                                             ),
@@ -512,10 +513,8 @@ class _MPageState extends State<MPage> {
                                     padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      // Align at the start of the row
                                       children: [
                                         Expanded(
-                                          // Optional to manage width
                                           child: Text(
                                             "Series: ${macro.qtt}\n"
                                             "Rest between Series: ${macro.rserie}s\n"
@@ -524,13 +523,13 @@ class _MPageState extends State<MPage> {
                                               fontSize: 16,
                                               color: secondaryColor,
                                             ),
-                                            textAlign: TextAlign.left, // Align text to the left
+                                            textAlign: TextAlign.left,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  // Now, display the list of exercises
+                                  // Now, display the list of exercises inside the macro
                                   ...macro.exercises.map<Widget>((exercise) {
                                     return Column(
                                       children: [
@@ -576,7 +575,6 @@ class _MPageState extends State<MPage> {
                                     title: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        // Wrap the title and subtitle in a Column to stack them vertically
                                         Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
@@ -588,12 +586,12 @@ class _MPageState extends State<MPage> {
                                                 fontSize: 20,
                                               ),
                                             ),
-                                            const SizedBox(height: 4), // Small space between title and subtitle
+                                            const SizedBox(height: 4),
                                             Text(
-                                              training.type.toString(), // Display the training type here
+                                              training.type.toString(),
                                               style: const TextStyle(
-                                                color: Colors.grey, // Choose a color for the subtitle
-                                                fontSize: 14, // Smaller font size for the subtitle
+                                                color: Colors.grey,
+                                                fontSize: 14,
                                               ),
                                             ),
                                           ],
@@ -614,13 +612,11 @@ class _MPageState extends State<MPage> {
                                         ),
                                       ],
                                     ),
-                                    // Use the `expanded` property of the training to control the state
                                     onExpansionChanged: (bool expanded) {
                                       setState(() {
                                         training.isExpanded = expanded;
                                       });
                                     },
-                                    // Show the widgets inside the training only if expanded
                                     children: training.isExpanded
                                         ? [
                                             ...trainingWidgets,

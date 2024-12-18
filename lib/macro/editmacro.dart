@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:gymdo/macro/addexermacro.dart';
 import 'package:gymdo/main.dart';
 import '/../sql.dart';
@@ -235,27 +234,30 @@ class EditMacroPageState extends State<EditMacroPage> {
                       var exercise = exercises[index];
                       return Card(
                         color: accentColor1,
-                        margin: const EdgeInsets.all(8),
                         child: ExpansionTile(
                           title: Text(
                             exercise['exerciseName'],
                             style: const TextStyle(
                               color: secondaryColor,
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           iconColor: secondaryColor,
                           collapsedIconColor: secondaryColor,
                           children: [
                             ...exercise['sets'].map<Widget>((set) {
+                              bool isLastSet = exercise['sets'].last == set; // Check if it's the last set
+
                               return Padding(
-                                padding: const EdgeInsets.only(top: 8.0, bottom: 16.0, left: 16),
+                                padding: EdgeInsets.only(
+                                  top: 8.0,
+                                  bottom: isLastSet ? 16.0 : 1.0, // Larger padding for the last set
+                                  left: 16,
+                                ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
-                                      // Ensures the text spans the available space
                                       child: Text(
                                         'Weight: ${set['Peso']}kg,   Reps: ${set['Rep']}',
                                         style: const TextStyle(color: secondaryColor, fontSize: 14),

@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'dart:async'; // For Timer
+import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/allexercises.dart';
 import 'package:gymdo/macro/allmacros.dart';
@@ -529,7 +530,6 @@ class _MPageState extends State<MPage> {
                                       ],
                                     ),
                                   ),
-                                  // Now, display the list of exercises inside the macro
                                   ...macro.exercises.map<Widget>((exercise) {
                                     return Column(
                                       children: [

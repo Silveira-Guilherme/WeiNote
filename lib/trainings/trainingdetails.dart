@@ -47,7 +47,7 @@ GROUP BY e.IdExer
     """);
 
       var macrosResult = await dbHelper.customQuery("""
-      SELECT m.IdMacro, m.Qtt AS quantity, e.Name AS exerciseName, e.IdExer AS exerciseId, tm.Exerorder AS Exerorder,
+      SELECT m.IdMacro, m.Qtt, m.RExer, m.RSerie, e.Name AS exerciseName, e.IdExer AS exerciseId, tm.Exerorder AS Exerorder,
              GROUP_CONCAT(DISTINCT s.Peso) AS Peso, GROUP_CONCAT(DISTINCT s.Rep) AS Rep, 'macro' AS itemType
       FROM Macro m
       JOIN Exer_Macro em ON m.IdMacro = em.CodMacro
@@ -95,7 +95,9 @@ GROUP BY e.IdExer
         if (!macroMap.containsKey(macroId)) {
           macroMap[macroId] = {
             'IdMacro': macroId,
-            'quantity': macro['quantity'],
+            'Qtt': macro['Qtt'],
+            'RExer': macro['RExer'],
+            'RSerie': macro['RSerie'],
             'itemType': 'macro',
             'Exerorder': macro['Exerorder'],
             'exercises': {},
@@ -262,25 +264,45 @@ GROUP BY e.IdExer
                                     child: Padding(
                                       padding: const EdgeInsets.all(3.0),
                                       child: isMacro
-                                          // Macro logic: Display exercises within the macro
                                           ? ExpansionTile(
                                               iconColor: secondaryColor,
                                               collapsedIconColor: secondaryColor,
                                               title: Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                  Text(
-                                                    'Macro: ${item['quantity']}x - Exercises',
-                                                    style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: secondaryColor,
-                                                    ),
+                                                  // Column containing two text widgets for exercises and details
+                                                  Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      // Text showing the exercises (Circuits)
+                                                      Text(
+                                                        'Circuits: ${item['exercises'] != null ? item['exercises'].keys.map((key) => key.toString()).join(', ') : 'No Exercises'}',
+                                                        style: const TextStyle(
+                                                          fontSize: 18,
+                                                          color: secondaryColor,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 5), // Add spacing between Circuits and Series text
+                                                      // Text showing series and other details
+                                                      Text(
+                                                        'Series: ${item['Qtt']}, RSerie: ${item['RSerie']}, RExer: ${item['RExer']}',
+                                                        style: const TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
+                                                  const SizedBox(width: 10), // Add spacing between the Column and IconButton
+                                                  // Edit button
                                                   IconButton(
                                                     icon: const Icon(Icons.edit, color: secondaryColor),
-                                                    onPressed: () {},
+                                                    onPressed: () {
+                                                      // Add your edit logic here
+                                                      print('Edit button pressed');
+                                                    },
                                                   ),
+                                                  // Expanded button (this takes remaining space)
                                                 ],
                                               ),
                                               children: item['exercises'] != null
@@ -328,7 +350,6 @@ GROUP BY e.IdExer
                                                     item['itemName'],
                                                     style: const TextStyle(
                                                       fontSize: 18,
-                                                      fontWeight: FontWeight.w500,
                                                       color: secondaryColor,
                                                     ),
                                                   ),

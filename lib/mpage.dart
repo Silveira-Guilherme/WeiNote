@@ -1,6 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 import 'dart:async'; // For Timer
-import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:gymdo/exercises/allexercises.dart';
 import 'package:gymdo/macro/allmacros.dart';
@@ -59,59 +58,62 @@ class _MPageState extends State<MPage> {
 
       // Fetch exercise data related to trainings
       List<dynamic> exerciseData = await dbHelper.customQuery("""
-    SELECT 
-      te.CodTr, 
-      e.IdExer, 
-      e.Name AS ExerciseName, 
-      te.ExerOrder,
-      s.Peso, 
-      s.Rep
-    FROM 
-      Tr_Exer te
-    LEFT JOIN 
-      Exer e ON te.CodExer = e.IdExer 
-    LEFT JOIN 
-      Serie s ON e.IdExer = s.CodExer  
-    WHERE 
-      te.CodTr IN (SELECT IdTr FROM Tr)
-    ORDER BY 
-      te.CodTr, te.ExerOrder
+SELECT 
+    te.CodTr, 
+    e.IdExer, 
+    e.Name AS ExerciseName, 
+    te.ExerOrder,
+    s.Peso, 
+    s.Rep
+FROM 
+    Tr_Exer te
+LEFT JOIN 
+    Exer e ON te.CodExer = e.IdExer 
+LEFT JOIN 
+    Serie s ON e.IdExer = s.CodExer  
+WHERE 
+    te.CodTr IN (SELECT IdTr FROM Tr)
+ORDER BY 
+    te.CodTr, te.ExerOrder, s.Peso;
+
     """);
+      print(exerciseData);
 
       // Fetch macro data related to trainings
       List<dynamic> macroData = await dbHelper.customQuery("""
-    SELECT 
-      m.idmacro AS MacroId,
-      tm.CodTr, 
-      m.IdMacro, 
-      mt.MacroOrder, 
-      m.Qtt AS MacroQtt,
-      m.qtt,
-      m.rserie,
-      m.rexer,
-      e.IdExer, 
-      e.Name AS ExerciseName, 
-      te.ExerOrder,
-      s.Peso, 
-      s.Rep
-    FROM 
-      Tr_Macro tm
-    LEFT JOIN 
-      Macro m ON tm.CodMacro = m.IdMacro
-    LEFT JOIN 
-      Exer_Macro mt ON mt.CodMacro = m.IdMacro
-    LEFT JOIN 
-      Exer e ON mt.CodExer = e.IdExer
-    LEFT JOIN 
-      Tr_Exer te ON te.CodExer = e.IdExer AND te.CodTr = tm.CodTr
-    LEFT JOIN 
-      Serie s ON e.IdExer = s.CodExer
-    WHERE 
-      tm.CodTr IN (SELECT IdTr FROM Tr)
-    ORDER BY 
-      tm.CodTr, mt.MacroOrder, te.ExerOrder
+SELECT DISTINCT 
+  m.idmacro AS MacroId,
+  tm.CodTr, 
+  m.IdMacro, 
+  mt.MacroOrder, 
+  m.Qtt AS MacroQtt,
+  m.qtt,
+  m.rserie,
+  m.rexer,
+  e.IdExer, 
+  e.Name AS ExerciseName, 
+  te.ExerOrder,
+  s.Peso, 
+  s.Rep
+FROM 
+  Tr_Macro tm
+LEFT JOIN 
+  Macro m ON tm.CodMacro = m.IdMacro
+LEFT JOIN 
+  Exer_Macro mt ON mt.CodMacro = m.IdMacro
+LEFT JOIN 
+  Exer e ON mt.CodExer = e.IdExer
+LEFT JOIN 
+  Tr_Exer te ON te.CodExer = e.IdExer AND te.CodTr = tm.CodTr
+LEFT JOIN 
+  Serie s ON e.IdExer = s.CodExer
+WHERE 
+  tm.CodTr IN (SELECT IdTr FROM Tr)
+ORDER BY 
+  tm.CodTr, mt.MacroOrder, te.ExerOrder
+
+
     """);
-      //print(macroData);
 
       // Initialize training map
       Map<int, Training> trainingMap = {};
@@ -309,96 +311,108 @@ class _MPageState extends State<MPage> {
             },
             child: ListView(
               children: [
-                const SizedBox(height: 10),
                 // Date and Chronometer Card
                 SizedBox(
-                  height: 210,
-                  width: MediaQuery.of(context).size.width - 10,
-                  child: Card(
-                    color: accentColor1,
-                    elevation: 1,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width / 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Card(
-                                  color: secondaryColor,
-                                  elevation: 3,
-                                  child: SizedBox(
-                                    width: MediaQuery.of(context).size.width,
-                                    height: MediaQuery.of(context).size.height / 7,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          dateStr,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 50.0,
-                                          ),
+                  height: 210, // Total height of the container
+                  child: Padding(
+                    padding: const EdgeInsets.all(7),
+                    child: Card(
+                      color: accentColor1,
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Square Date Card
+                            AspectRatio(
+                              aspectRatio: 1, // Forces a perfect square
+                              child: Card(
+                                color: secondaryColor,
+                                elevation: 3,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        dateStr,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 50.0,
                                         ),
-                                        Text(dayStr),
-                                      ],
-                                    ),
+                                      ),
+                                      Text(dayStr),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                              ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Chronometer Card
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width / 2 - 10,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Card(
-                                  color: secondaryColor,
-                                  elevation: 3,
-                                  child: SizedBox(
-                                    width: MediaQuery.of(context).size.width,
-                                    height: MediaQuery.of(context).size.height / 14,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
+                            const SizedBox(width: 10),
+                            // Timer Card with Buttons
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // Timer Display
+                                  Card(
+                                    color: secondaryColor,
+                                    elevation: 3,
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width * 0.4, // Slightly reduced width
+                                      height: 70, // Adjust height to balance proportions
+                                      child: Center(
+                                        child: Text(
                                           _formattedTime,
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 24.0,
                                           ),
-                                        )
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Buttons Row
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 6),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Left Button
+                                        IconButton(
+                                          icon: const Icon(Icons.play_arrow),
+                                          onPressed: _startTimer,
+                                          color: secondaryColor,
+                                        ),
+
+                                        // Center Button
+
+                                        IconButton(
+                                          icon: const Icon(Icons.pause),
+                                          onPressed: _stopTimer,
+                                          color: accentColor2,
+                                        ),
+
+                                        // Right Button
+                                        IconButton(
+                                          icon: const Icon(Icons.stop),
+                                          onPressed: _resetTimer,
+                                          color: accentColor2,
+                                        ),
                                       ],
                                     ),
                                   ),
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    IconButton(icon: const Icon(Icons.play_arrow), onPressed: _startTimer, color: secondaryColor),
-                                    IconButton(
-                                      icon: const Icon(Icons.pause),
-                                      onPressed: _stopTimer,
-                                      color: accentColor2,
-                                    ),
-                                    IconButton(icon: const Icon(Icons.stop), onPressed: _resetTimer, color: accentColor2),
-                                  ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 10),
                 // Your trainings list
                 trainings.isNotEmpty

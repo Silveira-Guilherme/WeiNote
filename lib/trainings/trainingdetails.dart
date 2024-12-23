@@ -299,7 +299,7 @@ GROUP BY e.IdExer
                                                     icon: const Icon(Icons.edit, color: secondaryColor),
                                                     onPressed: () {
                                                       // Add your edit logic here
-                                                      print('Edit button pressed');
+                                                      //print('Edit button pressed');
                                                     },
                                                   ),
                                                   // Expanded button (this takes remaining space)
